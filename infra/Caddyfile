@@ -1,5 +1,29 @@
+{
+	servers {
+		protocols h1 h2 h3
+	}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		-Server
+	}
+}
+
 {$DOMAIN} {
+	import security_headers
 	encode zstd gzip
+
+	# Limite de corpo na borda (upload de imagem do admin incluso).
+	request_body {
+		max_size 10MB
+	}
 
 	# API e WebSocket vão para o Nest; o resto é o front estático.
 	handle /api/* {
@@ -12,12 +36,20 @@
 		reverse_proxy api:3000
 	}
 	handle {
+		# CSP do site: scripts só do próprio domínio, imagens do domínio e do img.
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://img.{$DOMAIN}; connect-src 'self' wss://{$DOMAIN}; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
 		reverse_proxy web:80
 	}
 }
 
 img.{$DOMAIN} {
+	import security_headers
 	encode zstd gzip
+
+	# Só leitura: bloqueia qualquer escrita/listagem pública no bucket.
+	@not_read not method GET HEAD
+	respond @not_read 405
+
 	header Cache-Control "public, max-age=31536000, immutable"
 	reverse_proxy minio:9000
 }
