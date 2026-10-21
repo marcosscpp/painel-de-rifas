@@ -11,7 +11,8 @@ export type Paginated<T> = { items: T[]; total: number; page: number; pageSize: 
 
 // Tipos que mais de um domínio usa (site público e admin).
 export type RaffleStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'DRAWN'
-export type SaleMode = 'QUANTITY' | 'PICK' | 'BOTH'
+// Definido pelo admin: roleta (quantidade, números aleatórios) ou grade (comprador escolhe).
+export type SaleMode = 'QUANTITY' | 'PICK'
 export type PrizeKind = 'MONEY' | 'ITEM'
 
 export type ImageUrls = { thumb: string; full: string }

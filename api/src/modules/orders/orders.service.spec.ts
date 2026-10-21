@@ -13,7 +13,7 @@ const RAFFLE = {
   slug: 'onix',
   title: 'Onix 0km',
   status: 'ACTIVE',
-  saleMode: 'BOTH',
+  saleMode: 'QUANTITY',
   totalNumbers: 1000,
   priceCents: 199,
   minPerOrder: 1,
@@ -126,6 +126,7 @@ describe('OrdersService', () => {
     });
 
     it('recusa número que não existe na rifa', async () => {
+      prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, saleMode: 'PICK' });
       await expect(service.create(dto({ quantity: undefined, numbers: [3, 1000] }))).rejects.toThrow(
         'Números inexistentes: 1000',
       );
@@ -193,12 +194,14 @@ describe('OrdersService', () => {
     });
 
     it('escolhendo: reserva exatamente os números pedidos', async () => {
+      prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, saleMode: 'PICK' });
       prisma.$queryRaw.mockResolvedValueOnce([{ number: 3 }, { number: 9 }]);
       await service.create(dto({ quantity: undefined, numbers: [3, 9] }));
       expect(realtime.numbersChanged).toHaveBeenCalledWith('onix', 'RESERVED', [3, 9]);
     });
 
     it('escolhendo: se algum foi pego por outra pessoa, desfaz e diz quais', async () => {
+      prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, saleMode: 'PICK' });
       prisma.$queryRaw.mockResolvedValueOnce([{ number: 3 }]);
       const err = await service.create(dto({ quantity: undefined, numbers: [3, 9, 12] })).catch((e: unknown) => e);
       expect(err).toBeInstanceOf(NumbersUnavailableException);

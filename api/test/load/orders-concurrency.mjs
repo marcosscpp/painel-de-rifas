@@ -1,7 +1,7 @@
 // Teste de carga da reserva de números (rodar com o docker compose de dev no ar):
 //   node test/load/orders-concurrency.mjs [pedidos=600] [api=http://localhost:3333/api]
 //
-// Cria uma rifa pequena (2.000 números), dispara centenas de pedidos ao mesmo tempo
+// Cria duas rifas pequenas (2.000 números; uma de roleta e uma de grade), dispara centenas de pedidos ao mesmo tempo
 // (aleatórios, escolhidos na grade disputando os mesmos números e reenvios duplicados)
 // e confere no banco que nenhum número foi vendido duas vezes e que os contadores batem.
 // Usa X-Forwarded-For aleatório para simular IPs diferentes (só funciona em dev,
@@ -43,28 +43,33 @@ function sql(query) {
   }).trim();
 }
 
-// ── 1. Rifa de teste ──
+// ── 1. Rifas de teste: uma de roleta (quantidade) e uma de grade (números escolhidos) ──
 await call('POST', '/auth/login', { email: 'admin@rifas.local', password: 'admin-dev-123456' });
-const slug = `carga-${Date.now()}`;
-const { data: raffle } = await call('POST', '/admin/raffles', {
-  title: `Teste de carga ${new Date().toISOString()}`,
-  slug,
-  description: 'Gerada pelo teste de carga',
-  saleMode: 'BOTH',
-  totalNumbers: TOTAL_NUMBERS,
-  priceCents: 100,
-  maxPerOrder: 50,
-});
 const img = await sharp({ create: { width: 800, height: 450, channels: 3, background: '#444' } }).jpeg().toBuffer();
 const form = () => {
   const f = new FormData();
   f.append('file', new Blob([img], { type: 'image/jpeg' }), 'x.jpg');
   return f;
 };
-await call('POST', `/admin/raffles/${raffle.id}/cover`, null, { form: form() });
-await call('POST', `/admin/raffles/${raffle.id}/prizes`, { title: 'Prêmio', kind: 'ITEM' });
-const pub = await call('POST', `/admin/raffles/${raffle.id}/publish`);
-if (pub.data?.status !== 'ACTIVE') throw new Error(`Falha ao publicar: ${JSON.stringify(pub.data)}`);
+async function createRaffle(saleMode) {
+  const slug = `carga-${saleMode.toLowerCase()}-${Date.now()}`;
+  const { data: raffle } = await call('POST', '/admin/raffles', {
+    title: `Teste de carga ${saleMode} ${new Date().toISOString()}`,
+    slug,
+    description: 'Gerada pelo teste de carga',
+    saleMode,
+    totalNumbers: TOTAL_NUMBERS,
+    priceCents: 100,
+    maxPerOrder: 50,
+  });
+  await call('POST', `/admin/raffles/${raffle.id}/cover`, null, { form: form() });
+  await call('POST', `/admin/raffles/${raffle.id}/prizes`, { title: 'Prêmio', kind: 'ITEM' });
+  const pub = await call('POST', `/admin/raffles/${raffle.id}/publish`);
+  if (pub.data?.status !== 'ACTIVE') throw new Error(`Falha ao publicar: ${JSON.stringify(pub.data)}`);
+  return { id: raffle.id, slug };
+}
+const qtyRaffle = await createRaffle('QUANTITY');
+const pickRaffle = await createRaffle('PICK');
 cookie = '';
 
 // ── 2. Pedidos simultâneos ──
@@ -76,9 +81,9 @@ for (let i = 0; i < TOTAL_ORDERS; i++) {
   if (i % 3 === 0) {
     // disputa: todos querem números entre 0 e 59
     const nums = [...new Set([rand(60), rand(60), rand(60)])];
-    jobs.push({ kind: 'pick', body: { raffleSlug: slug, numbers: nums, buyer: buyer(i), idempotencyKey: key } });
+    jobs.push({ kind: 'pick', body: { raffleSlug: pickRaffle.slug, numbers: nums, buyer: buyer(i), idempotencyKey: key } });
   } else {
-    jobs.push({ kind: 'qty', body: { raffleSlug: slug, quantity: 1 + rand(5), buyer: buyer(i), idempotencyKey: key } });
+    jobs.push({ kind: 'qty', body: { raffleSlug: qtyRaffle.slug, quantity: 1 + rand(5), buyer: buyer(i), idempotencyKey: key } });
   }
   if (i % 10 === 0) dupKeys.push(jobs.length - 1);
 }
@@ -105,16 +110,16 @@ jobs.forEach((j, i) => {
 });
 
 // ── 3. Conferência no banco ──
-const raffleId = raffle.id;
+const ids = `'${qtyRaffle.id}','${pickRaffle.id}'`;
 const check = {
-  pedidosCriados: Number(sql(`select count(*) from orders where "raffleId"='${raffleId}'`)),
-  numerosReservadosNoBanco: Number(sql(`select count(*) from raffle_numbers where "raffleId"='${raffleId}' and status='RESERVED'`)),
-  somaQuantidadeDosPedidos: Number(sql(`select coalesce(sum(quantity),0) from orders where "raffleId"='${raffleId}' and status='PENDING'`)),
-  contadorDaRifa: Number(sql(`select "reservedCount" from raffles where id='${raffleId}'`)),
+  pedidosCriados: Number(sql(`select count(*) from orders where "raffleId" in (${ids})`)),
+  numerosReservadosNoBanco: Number(sql(`select count(*) from raffle_numbers where "raffleId" in (${ids}) and status='RESERVED'`)),
+  somaQuantidadeDosPedidos: Number(sql(`select coalesce(sum(quantity),0) from orders where "raffleId" in (${ids}) and status='PENDING'`)),
+  contadorDaRifa: Number(sql(`select sum("reservedCount") from raffles where id in (${ids})`)),
   pedidosComQuantidadeErrada: Number(
-    sql(`select count(*) from orders o where "raffleId"='${raffleId}' and quantity <> (select count(*) from raffle_numbers n where n."orderId"=o.id)`),
+    sql(`select count(*) from orders o where "raffleId" in (${ids}) and quantity <> (select count(*) from raffle_numbers n where n."orderId"=o.id)`),
   ),
-  reservadosSemPedido: Number(sql(`select count(*) from raffle_numbers where "raffleId"='${raffleId}' and status='RESERVED' and "orderId" is null`)),
+  reservadosSemPedido: Number(sql(`select count(*) from raffle_numbers where "raffleId" in (${ids}) and status='RESERVED' and "orderId" is null`)),
 };
 
 const ok =

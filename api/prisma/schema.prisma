@@ -46,10 +46,10 @@ enum RaffleStatus {
   DRAWN // resultado publicado
 }
 
+// Definido pelo admin em cada rifa; o comprador não escolhe.
 enum SaleMode {
-  QUANTITY // escolhe a quantidade, números aleatórios
-  PICK // escolhe os números na grade
-  BOTH
+  QUANTITY // roleta: o comprador escolhe a quantidade e recebe números aleatórios
+  PICK // grade: o comprador escolhe os números
 }
 
 model Raffle {
@@ -59,7 +59,7 @@ model Raffle {
   description  String
   rules        String       @default("")
   status       RaffleStatus @default(DRAFT)
-  saleMode     SaleMode     @default(BOTH)
+  saleMode     SaleMode     @default(QUANTITY)
   totalNumbers Int
   priceCents   Int
   minPerOrder  Int          @default(1)

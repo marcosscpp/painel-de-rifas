@@ -8,7 +8,7 @@ const draft = (over: Record<string, unknown> = {}) => ({
   slug: 'onix',
   title: 'Onix',
   status: 'DRAFT',
-  saleMode: 'BOTH',
+  saleMode: 'QUANTITY',
   totalNumbers: 1000,
   priceCents: 199,
   minPerOrder: 1,
@@ -25,7 +25,7 @@ const draft = (over: Record<string, unknown> = {}) => ({
 const createDto = (over: Partial<CreateRaffleDto> = {}): CreateRaffleDto => ({
   title: 'Rifa do Onix',
   description: 'desc',
-  saleMode: 'BOTH',
+  saleMode: 'QUANTITY',
   totalNumbers: 500,
   priceCents: 199,
   ...over,

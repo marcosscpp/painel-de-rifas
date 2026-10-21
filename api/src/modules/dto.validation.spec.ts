@@ -48,7 +48,7 @@ describe('validação de entrada', () => {
   });
 
   describe('CreateRaffleDto', () => {
-    const raffle = { title: 'Rifa', description: 'd', saleMode: 'BOTH', totalNumbers: 100, priceCents: 100 };
+    const raffle = { title: 'Rifa', description: 'd', saleMode: 'QUANTITY', totalNumbers: 100, priceCents: 100 };
 
     it('aceita rifa válida', () => {
       expect(errorsOf(CreateRaffleDto, raffle)).toEqual([]);
@@ -64,6 +64,11 @@ describe('validação de entrada', () => {
     it('slug só com letras minúsculas, números e hífen', () => {
       expect(errorsOf(CreateRaffleDto, { ...raffle, slug: 'Rifa Boa' })).toContain('slug');
       expect(errorsOf(CreateRaffleDto, { ...raffle, slug: 'rifa-boa-2' })).toEqual([]);
+    });
+
+    it('modo de venda é só roleta (QUANTITY) ou grade (PICK)', () => {
+      expect(errorsOf(CreateRaffleDto, { ...raffle, saleMode: 'PICK' })).toEqual([]);
+      expect(errorsOf(CreateRaffleDto, { ...raffle, saleMode: 'BOTH' })).toContain('saleMode');
     });
 
     it('não aceita status pelo corpo (só pelas ações)', () => {

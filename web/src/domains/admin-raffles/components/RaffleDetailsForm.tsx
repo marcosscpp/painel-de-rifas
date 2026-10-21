@@ -5,10 +5,10 @@ import type { SaleMode } from '@/shared/types'
 import { centsToInput, formatCents, isoToLocalInput, localInputToIso, parseMoneyToCents } from '@/shared/utils/format'
 import type { AdminRaffle, RaffleInput } from '../types'
 
+// O admin decide como a rifa vende; o comprador não escolhe.
 const saleModes = [
-  { value: 'BOTH', label: 'Quantidade e escolha de números' },
-  { value: 'QUANTITY', label: 'Só por quantidade (números aleatórios)' },
-  { value: 'PICK', label: 'Só escolhendo os números' },
+  { value: 'QUANTITY', label: 'Roleta: comprador escolhe a quantidade, números aleatórios' },
+  { value: 'PICK', label: 'Grade: comprador escolhe os números' },
 ]
 
 type Props = {
@@ -28,7 +28,7 @@ export function RaffleDetailsForm({ raffle, submitting, error, submitLabel, onSu
     slug: raffle?.slug ?? '',
     description: raffle?.description ?? '',
     rules: raffle?.rules ?? '',
-    saleMode: (raffle?.saleMode ?? 'BOTH') as SaleMode,
+    saleMode: (raffle?.saleMode ?? 'QUANTITY') as SaleMode,
     totalNumbers: String(raffle?.totalNumbers ?? 10000),
     price: centsToInput(raffle?.priceCents ?? null),
     minPerOrder: String(raffle?.minPerOrder ?? 1),

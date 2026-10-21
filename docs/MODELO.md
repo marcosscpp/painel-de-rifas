@@ -19,7 +19,7 @@ Sem níveis intermediários (operador etc.). Login do comprador ainda **a defini
 | Entidade | Para que serve | Pontos-chave |
 |---|---|---|
 | `User` | Admin e comprador | `role`, `phone` único, `cpf` opcional único, senha só para admin |
-| `Raffle` | Uma rifa | `paidCount`/`reservedCount` mantidos na mesma transação da reserva (progresso sem COUNT), `status`, `saleMode` (QUANTITY, PICK, BOTH), `totalNumbers`, `priceCents`, mínimo e máximo por pedido, datas, resultado da Loteria Federal |
+| `Raffle` | Uma rifa | `paidCount`/`reservedCount` mantidos na mesma transação da reserva (progresso sem COUNT), `status`, `saleMode` (QUANTITY = roleta, PICK = grade; escolhido pelo admin, o comprador não escolhe), `totalNumbers`, `priceCents`, mínimo e máximo por pedido, datas, resultado da Loteria Federal |
 | `RafflePackage` | Pacotes promocionais ("+10", "+50") | quantidade e destaque |
 | `Prize` / `PrizeImage` | Prêmios e galeria | dinheiro ou item; imagens no MinIO, banco guarda só a chave |
 | `RaffleNumber` | Um número da rifa (0 até total-1), gerado ao publicar | PK `(raffleId, number)`, `status` (AVAILABLE, RESERVED, PAID), `orderId`, `reservedUntil`. Sem FK para `raffles` (a checagem por linha deixava a publicação de 1 milhão de números ~5x mais lenta) |

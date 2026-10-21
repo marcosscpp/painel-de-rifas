@@ -26,7 +26,6 @@ export function RafflePage() {
   useRaffleLive(slug)
   useDocumentTitle(raffle?.title)
 
-  const [modeChoice, setMode] = useState<BuyMode | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [lost, setLost] = useState<number[]>([])
 
@@ -58,8 +57,8 @@ export function RafflePage() {
   }
   if (error || !raffle) return <Alert tone="error">Não foi possível carregar a rifa. Tente de novo em instantes.</Alert>
 
-  const mode: BuyMode =
-    raffle.saleMode === 'PICK' ? 'pick' : raffle.saleMode === 'QUANTITY' ? 'quantity' : (modeChoice ?? 'quantity')
+  // Quem decide é o admin: grade (escolher números) ou roleta (quantidade).
+  const mode: BuyMode = raffle.saleMode === 'PICK' ? 'pick' : 'quantity'
   const toggle = (n: number) =>
     setSelected((s) => {
       const next = new Set(s)
@@ -199,7 +198,7 @@ export function RafflePage() {
       </div>
 
       <aside className="order-first lg:order-none lg:sticky lg:top-20 lg:self-start">
-        <BuyBox raffle={raffle} mode={mode} onModeChange={setMode} selected={selected} onDeselect={deselect} />
+        <BuyBox raffle={raffle} mode={mode} selected={selected} onDeselect={deselect} />
       </aside>
     </div>
   )

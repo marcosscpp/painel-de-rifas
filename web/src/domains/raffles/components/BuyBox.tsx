@@ -1,16 +1,15 @@
 import { useRef, useState } from 'react'
 import {
-  HandPointingIcon,
   LightningIcon,
   MinusIcon,
   PlusIcon,
-  ShuffleIcon,
+  ShieldCheckIcon,
   SparkleIcon,
   TicketIcon,
 } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router'
 import { type BuyerDraft, type BuyerInput, BuyerForm, emptyBuyer, useCreateOrder } from '@/domains/checkout'
-import { Alert, Button, Card, Input } from '@/shared/components'
+import { Alert, Button, Card, Input, Modal } from '@/shared/components'
 import { ApiError } from '@/shared/lib/http'
 import { cn } from '@/shared/utils/cn'
 import { formatCents, padNumber } from '@/shared/utils/format'
@@ -20,18 +19,17 @@ export type BuyMode = 'quantity' | 'pick'
 
 type Props = {
   raffle: RaffleDetail
-  mode: BuyMode
-  onModeChange: (m: BuyMode) => void
+  mode: BuyMode // definido pelo admin na rifa
   selected: Set<number>
   onDeselect: (numbers: number[]) => void
 }
 
-export function BuyBox({ raffle, mode, onModeChange, selected, onDeselect }: Props) {
+export function BuyBox({ raffle, mode, selected, onDeselect }: Props) {
   const navigate = useNavigate()
   const createOrder = useCreateOrder()
   const initial = raffle.packages.find((p) => p.highlighted)?.quantity ?? raffle.minPerOrder
   const [qty, setQty] = useState(initial)
-  const [step, setStep] = useState<'choose' | 'buyer'>('choose')
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [notice, setNotice] = useState<string>()
   const [buyer, setBuyer] = useState<BuyerDraft>(emptyBuyer)
   // Chave de idempotência da tentativa atual: reenviar (clique duplo, rede caindo) não duplica o pedido.
@@ -40,8 +38,6 @@ export function BuyBox({ raffle, mode, onModeChange, selected, onDeselect }: Pro
   const clamp = (n: number) =>
     Math.max(raffle.minPerOrder, Math.min(raffle.maxPerOrder, raffle.progress.available, n || 0))
   const count = mode === 'pick' ? selected.size : qty
-  const canPick = raffle.saleMode !== 'QUANTITY'
-  const canQty = raffle.saleMode !== 'PICK'
 
   if (raffle.status !== 'ACTIVE') {
     const msg = raffle.status === 'PAUSED' ? 'Vendas pausadas no momento.' : 'Vendas encerradas.'
@@ -74,7 +70,7 @@ export function BuyBox({ raffle, mode, onModeChange, selected, onDeselect }: Pro
           if (taken?.length) {
             attemptKey.current = null
             onDeselect(taken)
-            setStep('choose')
+            setCheckoutOpen(false)
             setNotice(
               `Os números ${taken.map((n) => padNumber(n, raffle.totalNumbers)).join(', ')} acabaram de ser reservados por outra pessoa. Escolha outros.`,
             )
@@ -98,37 +94,7 @@ export function BuyBox({ raffle, mode, onModeChange, selected, onDeselect }: Pro
       </div>
 
       <div className="flex flex-col gap-4 p-5">
-        {canPick && canQty && step === 'choose' && (
-          <div className="grid grid-cols-2 rounded-xl border border-cream-300 bg-cream-200/60 p-1 text-xs font-bold">
-            {(['quantity', 'pick'] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => onModeChange(m)}
-                className={cn(
-                  'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg py-2 transition',
-                  mode === m
-                    ? 'bg-watercourse-800 text-cream-50 shadow-xs'
-                    : 'text-slate-grey-700 hover:text-charcoal-900',
-                )}
-              >
-                {m === 'quantity' ? (
-                  <>
-                    <ShuffleIcon weight="bold" className="size-3.5 text-anzac-400" />
-                    Aleatórios
-                  </>
-                ) : (
-                  <>
-                    <HandPointingIcon weight="bold" className="size-3.5 text-anzac-400" />
-                    Escolher números
-                  </>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {step === 'choose' && mode === 'quantity' && (
+        {mode === 'quantity' && (
           <>
             {raffle.packages.length > 0 && (
               <div className="grid grid-cols-3 gap-2.5 pt-1">
@@ -195,7 +161,7 @@ export function BuyBox({ raffle, mode, onModeChange, selected, onDeselect }: Pro
           </>
         )}
 
-        {step === 'choose' && mode === 'pick' && (
+        {mode === 'pick' && (
           <div className="rounded-xl border border-cream-200 bg-cream-100/70 p-3 text-center text-sm text-slate-grey-700">
             {selected.size ? (
               <span className="font-semibold text-watercourse-800">
@@ -222,26 +188,56 @@ export function BuyBox({ raffle, mode, onModeChange, selected, onDeselect }: Pro
 
         {notice && <Alert tone="warning">{notice}</Alert>}
 
-        {step === 'choose' ? (
-          <Button type="button" variant="buy" disabled={!valid} className="py-3.5 text-base" onClick={() => setStep('buyer')}>
-            <TicketIcon weight="bold" className="size-5" />
-            {mode === 'pick' && !selected.size ? 'Selecione os números' : 'Continuar para reserva'}
-          </Button>
-        ) : (
-          <>
-            {createOrder.error && !(createOrder.error instanceof ApiError && createOrder.error.status === 409 && notice) && (
+        <Button
+          type="button"
+          variant="buy"
+          disabled={!valid}
+          className="py-3.5 text-base"
+          onClick={() => {
+            setNotice(undefined)
+            setCheckoutOpen(true)
+          }}
+        >
+          <TicketIcon weight="bold" className="size-5" />
+          {mode === 'pick' && !selected.size ? 'Selecione os números' : 'Continuar para reserva'}
+        </Button>
+
+        <Modal
+          open={checkoutOpen}
+          onClose={() => setCheckoutOpen(false)}
+          busy={createOrder.isPending}
+          title="Checkout"
+          footer={
+            <p className="flex items-center justify-center gap-1.5 text-xs text-slate-grey-600">
+              <ShieldCheckIcon weight="fill" className="size-4 text-watercourse-700" />
+              Compra <strong className="text-charcoal-900">100% segura</strong> via Pix
+            </p>
+          }
+        >
+          <div className="mb-4 flex items-start justify-between gap-4 rounded-xl border border-cream-200 bg-cream-100/70 p-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-slate-grey-600">Você está adquirindo</p>
+              <p className="font-wide truncate text-sm font-bold text-charcoal-900">{raffle.title}</p>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-[11px] text-slate-grey-600">{count} {count === 1 ? 'número' : 'números'}</p>
+              <p className="font-wide text-base font-extrabold text-watercourse-900">{formatCents(count * raffle.priceCents)}</p>
+            </div>
+          </div>
+          {createOrder.error && !(createOrder.error instanceof ApiError && createOrder.error.status === 409 && notice) && (
+            <div className="mb-3">
               <Alert tone="error">{createOrder.error.message}</Alert>
-            )}
-            <BuyerForm
-              value={buyer}
-              onChange={setBuyer}
-              submitLabel={`Reservar e pagar ${formatCents(count * raffle.priceCents)}`}
-              submitting={createOrder.isPending}
-              onSubmit={buy}
-              onCancel={() => setStep('choose')}
-            />
-          </>
-        )}
+            </div>
+          )}
+          <BuyerForm
+            value={buyer}
+            onChange={setBuyer}
+            submitLabel={`Reservar e pagar ${formatCents(count * raffle.priceCents)}`}
+            submitting={createOrder.isPending}
+            onSubmit={buy}
+            onCancel={() => setCheckoutOpen(false)}
+          />
+        </Modal>
       </div>
     </Card>
   )

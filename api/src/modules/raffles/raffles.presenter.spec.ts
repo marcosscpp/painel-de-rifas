@@ -22,7 +22,7 @@ describe('RafflesPresenter', () => {
       description: 'd',
       rules: '',
       status: 'ACTIVE',
-      saleMode: 'BOTH',
+      saleMode: 'QUANTITY',
       totalNumbers: 100,
       priceCents: 200,
       minPerOrder: 1,
