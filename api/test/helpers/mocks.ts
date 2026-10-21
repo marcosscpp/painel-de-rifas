@@ -4,19 +4,21 @@ import { Prisma } from '../../src/generated/prisma/client.js';
 // Mock do PrismaService para testes unitários: cada método é um vi.fn().
 // $transaction roda a função recebendo o próprio mock como "tx" (ou resolve o array).
 export function makePrisma() {
+  // Como o Prisma de verdade, todo método devolve uma Promise (por padrão, de undefined).
+  const fn = () => vi.fn().mockResolvedValue(undefined);
   const model = () => ({
-    findUnique: vi.fn(),
-    findUniqueOrThrow: vi.fn(),
-    findFirst: vi.fn(),
-    findMany: vi.fn(),
-    count: vi.fn(),
-    create: vi.fn(),
-    createMany: vi.fn(),
-    update: vi.fn(),
-    updateMany: vi.fn(),
-    upsert: vi.fn(),
-    delete: vi.fn(),
-    deleteMany: vi.fn(),
+    findUnique: fn(),
+    findUniqueOrThrow: fn(),
+    findFirst: fn(),
+    findMany: fn(),
+    count: fn(),
+    create: fn(),
+    createMany: fn(),
+    update: fn(),
+    updateMany: fn(),
+    upsert: fn(),
+    delete: fn(),
+    deleteMany: fn(),
   });
 
   const prisma = {
@@ -26,6 +28,8 @@ export function makePrisma() {
     prize: model(),
     prizeImage: model(),
     order: model(),
+    payment: model(),
+    webhookEvent: model(),
     $queryRaw: vi.fn(),
     $executeRaw: vi.fn(),
     $transaction: vi.fn(),

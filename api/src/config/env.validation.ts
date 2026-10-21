@@ -89,6 +89,11 @@ export class EnvVars {
   @IsString()
   PAYMENT_WEBHOOK_TOKEN?: string;
 
+  // Base da API do gateway. Asaas: https://api-sandbox.asaas.com/v3 (teste) ou https://api.asaas.com/v3.
+  @IsOptional()
+  @IsUrl({ require_tld: false, require_protocol: true })
+  PAYMENT_BASE_URL?: string;
+
   @Transform(toInt)
   @IsInt()
   @Min(0)
@@ -110,6 +115,12 @@ export function validateEnv(raw: Record<string, unknown>): EnvVars {
       .map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`)
       .join('\n  ');
     throw new Error(`Variáveis de ambiente inválidas:\n  ${msg}`);
+  }
+  if (env.PAYMENT_PROVIDER !== 'FAKE' && !env.PAYMENT_API_KEY) {
+    throw new Error(`PAYMENT_API_KEY obrigatório com PAYMENT_PROVIDER=${env.PAYMENT_PROVIDER}`);
+  }
+  if (env.PAYMENT_PROVIDER === 'IUGU') {
+    throw new Error('PAYMENT_PROVIDER=IUGU ainda não implementado');
   }
   if (env.NODE_ENV === NodeEnv.Production) {
     if (env.PAYMENT_PROVIDER === 'FAKE') {

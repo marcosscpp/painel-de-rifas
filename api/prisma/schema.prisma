@@ -27,6 +27,7 @@ model User {
   email        String?  @unique
   passwordHash String? // só admin usa senha (argon2id)
   sessionVersion Int    @default(0) // incrementar derruba todas as sessões do usuário
+  gatewayCustomerId String? // id do cliente no gateway (Asaas exige cadastro antes da cobrança)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -182,6 +183,11 @@ model Order {
   totalCents     Int
   status         OrderStatus @default(PENDING)
   idempotencyKey String      @unique // enviada pelo front, evita pedido duplicado
+  // Números reservados na criação. Ficam guardados mesmo depois de expirar, para
+  // tentar devolvê-los a quem pagou atrasado.
+  reservedNumbers Int[]      @default([])
+  // Pagou depois de expirar e algum número já tinha sido vendido: reembolsar pelo painel.
+  refundRequired Boolean     @default(false)
   expiresAt      DateTime
   paidAt         DateTime?
   createdAt      DateTime    @default(now())

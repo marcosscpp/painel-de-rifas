@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
+import { PaymentsModule } from '../payments/payments.module.js';
 import { RafflesModule } from '../raffles/raffles.module.js';
 import { UploadsModule } from '../uploads/uploads.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { OrdersPublicController } from './orders.public.controller.js';
 import { OrdersService } from './orders.service.js';
+import { PaymentsWebhookController } from './payments-webhook.controller.js';
 
-// Pedidos: reserva de números com SKIP LOCKED, idempotência e expiração em 15 min.
+// Pedidos: reserva com SKIP LOCKED, idempotência, cobrança Pix, confirmação por webhook e expiração.
 @Module({
-  imports: [UsersModule, RafflesModule, UploadsModule],
-  controllers: [OrdersPublicController],
+  imports: [UsersModule, RafflesModule, UploadsModule, PaymentsModule],
+  controllers: [OrdersPublicController, PaymentsWebhookController],
   providers: [OrdersService],
   exports: [OrdersService],
 })

@@ -15,34 +15,32 @@ export function Skeleton({ className, ...rest }: HTMLAttributes<HTMLDivElement>)
 
 export function RaffleCardSkeleton() {
   return (
-    <div className="ticket flex flex-col overflow-hidden rounded-2xl border border-cream-200 bg-cream-50 shadow-sm">
-      <Skeleton className="aspect-video w-full rounded-none" />
-      <div className="flex flex-1 flex-col justify-between gap-3 p-4 pb-3">
-        <div className="space-y-2">
-          <Skeleton className="h-5 w-4/5" />
-          <Skeleton className="h-3.5 w-1/2" />
+    <div className="flex items-center gap-3.5 rounded-2xl border border-cream-200 bg-white p-3 shadow-2xs">
+      <Skeleton className="size-20 shrink-0 rounded-xl sm:size-24" />
+      <div className="flex-1 space-y-2">
+        <div className="flex gap-2">
+          <Skeleton className="h-5 w-20 rounded-lg" />
+          <Skeleton className="h-5 w-24 rounded-lg" />
         </div>
-        <div className="space-y-1.5">
-          <Skeleton className="h-3 w-full rounded-full" />
-          <Skeleton className="h-3 w-1/3" />
-        </div>
-      </div>
-      <div className="perforation mx-3" />
-      <div className="flex h-[72px] items-center justify-between bg-cream-100/70 px-4">
-        <div className="space-y-1.5">
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-5 w-20" />
-        </div>
-        <Skeleton className="h-9 w-28 rounded-xl" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="h-3 w-1/3" />
       </div>
     </div>
   )
 }
 
-export function CardGridSkeleton({ count = 6 }: { count?: number }) {
+export function CardGridSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: count }).map((_, i) => (
+    <div className="flex flex-col gap-3">
+      <div className="overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-sm">
+        <Skeleton className="aspect-video w-full rounded-none" />
+        <div className="space-y-3 p-4">
+          <Skeleton className="h-6 w-2/3" />
+          <Skeleton className="h-3 w-full rounded-full" />
+        </div>
+      </div>
+      {Array.from({ length: Math.max(0, count - 1) }).map((_, i) => (
         <RaffleCardSkeleton key={i} />
       ))}
     </div>

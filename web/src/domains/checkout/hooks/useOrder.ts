@@ -28,3 +28,16 @@ export function useCreateOrder() {
     onSuccess: (order) => qc.setQueryData(orderKey(order.id), order),
   })
 }
+
+export function useSimulatePayment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ordersApi.simulatePayment,
+    onSuccess: ({ order }) => qc.setQueryData(orderKey(order.id), order),
+  })
+}
+
+// Regras do checkout que vêm do servidor (ex.: CPF obrigatório com o Asaas).
+export function useCheckoutSettings() {
+  return useQuery({ queryKey: ['checkout-settings'], queryFn: ordersApi.settings, staleTime: 5 * 60_000 })
+}

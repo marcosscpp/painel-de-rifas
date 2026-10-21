@@ -61,6 +61,19 @@ docker compose exec api npx prisma studio
 
 A API aplica as migrations pendentes ao subir.
 
+## Pagamento Pix
+
+O gateway é escolhido por `PAYMENT_PROVIDER`:
+
+| Valor | Uso |
+|---|---|
+| `FAKE` (padrão em dev) | QR Code de mentira e botão "Simular pagamento" na tela do pedido. Recusado em produção. |
+| `ASAAS` | Cobrança Pix real. Precisa de `PAYMENT_API_KEY`, `PAYMENT_WEBHOOK_TOKEN` e `PAYMENT_BASE_URL` (sandbox: `https://api-sandbox.asaas.com/v3`). Exige CPF do comprador. |
+
+Webhook no painel do Asaas: URL `https://DOMINIO/api/webhooks/asaas`, token de autenticação = `PAYMENT_WEBHOOK_TOKEN`, eventos de cobrança (`PAYMENT_RECEIVED` e `PAYMENT_CONFIRMED`).
+
+Garantias: evento repetido é ignorado (`webhook_events` com chave única); se o processamento falhar, o evento é apagado para o Asaas reenviar; o pedido é travado na confirmação para não cruzar com a expiração. Pix pago depois de expirar devolve os mesmos números se ainda estiverem livres; senão o pedido fica marcado com `refundRequired` para reembolso pelo painel.
+
 ## Segurança
 
 | Camada | O que está feito |

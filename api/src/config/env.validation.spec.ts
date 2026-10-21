@@ -33,10 +33,14 @@ describe('validateEnv', () => {
   });
 
   describe('produção', () => {
-    const prod = { ...base, NODE_ENV: 'production', PAYMENT_PROVIDER: 'ASAAS', PAYMENT_WEBHOOK_TOKEN: 't'.repeat(24) };
+    const prod = { ...base, NODE_ENV: 'production', PAYMENT_PROVIDER: 'ASAAS', PAYMENT_API_KEY: 'chave', PAYMENT_WEBHOOK_TOKEN: 't'.repeat(24) };
 
     it('aceita configuração completa', () => {
       expect(() => validateEnv(prod)).not.toThrow();
+    });
+
+    it('gateway real exige chave de API', () => {
+      expect(() => validateEnv({ ...prod, PAYMENT_API_KEY: undefined })).toThrow('PAYMENT_API_KEY');
     });
 
     it('não sobe com gateway falso', () => {

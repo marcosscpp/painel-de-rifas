@@ -12,10 +12,22 @@ export type Order = {
   expiresAt: string
   paidAt: string | null
   createdAt: string
+  refundRequired: boolean
   numbers: number[]
   buyer: { name: string; phone: string | null }
   raffle: { slug: string; title: string; totalNumbers: number; priceCents: number; cover: ImageUrls | null }
+  payment: OrderPayment | null
 }
+
+// QR Code e copia e cola só vêm enquanto o pedido está pendente.
+export type OrderPayment = {
+  status: 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'REFUNDED'
+  pixCopyPaste: string | null
+  pixQrCodeBase64: string | null
+  canSimulate: boolean // só com o gateway de teste, fora de produção
+}
+
+export type CheckoutSettings = { cpfRequired: boolean; pixFeeCents: number; reservationMinutes: number }
 
 export type BuyerInput = { name: string; phone: string; cpf?: string }
 

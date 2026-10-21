@@ -37,6 +37,7 @@ const ORDER_ROW = {
   raffle: RAFFLE,
   user: { name: 'Maria da Silva', phone: '11987654321' },
   numbers: [{ number: 7 }, { number: 42 }],
+  payment: { id: 'pay1', status: 'PENDING', pixCopyPaste: 'copia', pixQrCodeBase64: 'qr' },
 };
 
 const dto = (over: Partial<CreateOrderDto> = {}): CreateOrderDto => ({
@@ -52,6 +53,7 @@ describe('OrdersService', () => {
   let users: { upsertBuyer: ReturnType<typeof vi.fn> };
   let realtime: { numbersChanged: ReturnType<typeof vi.fn>; progressChanged: ReturnType<typeof vi.fn>; orderStatus: ReturnType<typeof vi.fn> };
   let uploads: { urls: ReturnType<typeof vi.fn> };
+  let gateway: { name: string; requiresCpf: boolean; createCharge: ReturnType<typeof vi.fn>; cancelCharge: ReturnType<typeof vi.fn> };
   let service: OrdersService;
 
   beforeEach(() => {
@@ -59,6 +61,7 @@ describe('OrdersService', () => {
     users = { upsertBuyer: vi.fn().mockResolvedValue({ id: 'u1' }) };
     realtime = { numbersChanged: vi.fn(), progressChanged: vi.fn(), orderStatus: vi.fn() };
     uploads = { urls: vi.fn().mockReturnValue(null) };
+    gateway = { name: 'FAKE', requiresCpf: false, createCharge: vi.fn(), cancelCharge: vi.fn().mockResolvedValue(undefined) };
     service = new OrdersService(
       prisma as never,
       users as never,
@@ -66,6 +69,7 @@ describe('OrdersService', () => {
       new RafflesPresenter(uploads as never),
       uploads as never,
       makeConfig({ RESERVATION_MINUTES: 15, PIX_FEE_CENTS: 199 }) as never,
+      gateway as never,
     );
 
     // Padrão: chave nova, rifa ativa, pedido criado, contador atualizado.

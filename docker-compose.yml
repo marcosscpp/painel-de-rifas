@@ -77,6 +77,10 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-rifas}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-rifas-secret}
       PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-FAKE}
+      # Para testar com o sandbox do Asaas: PAYMENT_PROVIDER=ASAAS e a chave no .env da raiz
+      PAYMENT_API_KEY: ${PAYMENT_API_KEY:-}
+      PAYMENT_WEBHOOK_TOKEN: ${PAYMENT_WEBHOOK_TOKEN:-fake-dev-token}
+      PAYMENT_BASE_URL: ${PAYMENT_BASE_URL:-https://api-sandbox.asaas.com/v3}
       PIX_FEE_CENTS: ${PIX_FEE_CENTS:-199}
       RESERVATION_MINUTES: ${RESERVATION_MINUTES:-15}
       # Bind mount do Windows não dispara eventos de arquivo: usa polling.

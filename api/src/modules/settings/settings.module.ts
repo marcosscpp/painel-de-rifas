@@ -1,5 +1,10 @@
 import { Module } from '@nestjs/common';
+import { PaymentsModule } from '../payments/payments.module.js';
+import { SettingsPublicController } from './settings.public.controller.js';
 
-// Configurações editáveis pelo admin (taxa Pix, reserva, identidade visual).
-@Module({})
+// Configurações: por enquanto só as públicas do checkout. Edição pelo admin entra na etapa 6.
+@Module({
+  imports: [PaymentsModule],
+  controllers: [SettingsPublicController],
+})
 export class SettingsModule {}

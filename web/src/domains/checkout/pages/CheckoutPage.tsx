@@ -1,10 +1,11 @@
-import { ClockCountdownIcon, PhoneIcon, QrCodeIcon, ReceiptIcon, TicketIcon, UserIcon } from '@phosphor-icons/react'
+import { ClockCountdownIcon, PhoneIcon, ReceiptIcon, TicketIcon, UserIcon } from '@phosphor-icons/react'
 import { Link, useParams } from 'react-router'
 import { Alert, Card, CheckoutSkeleton, PageHeader } from '@/shared/components'
 import { useCountdown } from '@/shared/hooks/useCountdown'
 import { ApiError } from '@/shared/lib/http'
 import { formatCents } from '@/shared/utils/format'
 import { OrderNumbers } from '../components/OrderNumbers'
+import { PixPayment } from '../components/PixPayment'
 import { useOrder } from '../hooks/useOrder'
 
 export function CheckoutPage() {
@@ -56,7 +57,13 @@ export function CheckoutPage() {
       {order.status === 'PAID' && (
         <Alert tone="success">Pagamento confirmado! Seus números estão garantidos. Boa sorte!</Alert>
       )}
-      {expired && (
+      {order.refundRequired && (
+        <Alert tone="warning">
+          Recebemos seu Pix depois que a reserva expirou e algum número já tinha sido vendido. O valor será
+          devolvido pela organização.
+        </Alert>
+      )}
+      {expired && !order.refundRequired && (
         <Alert tone="warning">
           O tempo para pagar acabou e os números voltaram para a venda.{' '}
           <Link to={`/rifa/${order.raffle.slug}`} className="font-bold underline">
@@ -79,11 +86,7 @@ export function CheckoutPage() {
                 {countdown.label}
               </p>
             </div>
-            <div className="flex h-48 w-48 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-cream-300 bg-cream-100/70 p-4 text-xs text-slate-grey-600">
-              <QrCodeIcon weight="duotone" className="size-12 text-watercourse-700" />
-              <span>QR Code do Pix aparece aqui (próxima etapa)</span>
-            </div>
-            <p className="text-xs text-slate-grey-600">A confirmação aparece nesta tela automaticamente.</p>
+            <PixPayment order={order} />
           </div>
         </Card>
       )}

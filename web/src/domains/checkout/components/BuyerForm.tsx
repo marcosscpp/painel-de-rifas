@@ -2,6 +2,7 @@ import type { FormEvent } from 'react'
 import { ArrowLeftIcon, LightningIcon } from '@phosphor-icons/react'
 import { Button, Input } from '@/shared/components'
 import { maskCpfInput, maskPhoneInput } from '@/shared/utils/format'
+import { useCheckoutSettings } from '../hooks/useOrder'
 import type { BuyerDraft, BuyerInput } from '../types'
 
 type Props = {
@@ -17,6 +18,10 @@ type Props = {
 // Controlado por fora para não perder o que foi digitado se o comprador voltar e trocar os números.
 export function BuyerForm({ value, onChange, submitLabel, submitting, onSubmit, onCancel }: Props) {
   const set = (patch: Partial<BuyerDraft>) => onChange({ ...value, ...patch })
+  // O gateway real (Asaas) exige CPF para gerar o Pix; o de teste não.
+  const cpfRequired = useCheckoutSettings().data?.cpfRequired ?? false
+  const cpfDigits = value.cpf.replace(/\D/g, '')
+  const cpfError = cpfDigits.length > 0 && cpfDigits.length < 11 ? 'CPF incompleto' : undefined
   const phoneDigits = value.phone.replace(/\D/g, '')
   const phoneError = phoneDigits.length > 0 && phoneDigits.length < 10 ? 'Telefone incompleto' : undefined
 
@@ -49,7 +54,9 @@ export function BuyerForm({ value, onChange, submitLabel, submitting, onSubmit, 
         onChange={(e) => set({ phone: maskPhoneInput(e.target.value) })}
       />
       <Input
-        label="CPF (opcional)"
+        label={cpfRequired ? 'CPF' : 'CPF (opcional)'}
+        required={cpfRequired}
+        error={cpfError}
         inputMode="numeric"
         placeholder="000.000.000-00"
         value={value.cpf}
@@ -65,7 +72,7 @@ export function BuyerForm({ value, onChange, submitLabel, submitting, onSubmit, 
         />
         <span>Declaro que tenho 18 anos ou mais e concordo com o regulamento da campanha.</span>
       </label>
-      <Button type="submit" variant="buy" loading={submitting} disabled={!!phoneError} className="py-3.5 text-base">
+      <Button type="submit" variant="buy" loading={submitting} disabled={!!phoneError || !!cpfError} className="py-3.5 text-base">
         <LightningIcon weight="fill" className="size-4.5" />
         {submitLabel}
       </Button>
