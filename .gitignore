@@ -7,3 +7,4 @@ coverage/
 *.log
 api/src/generated/
 .DS_Store
+*.tsbuildinfo
