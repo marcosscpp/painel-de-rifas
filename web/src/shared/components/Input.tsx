@@ -1,31 +1,62 @@
-import { type InputHTMLAttributes, useId } from 'react'
+import { type InputHTMLAttributes, type ReactNode, useId } from 'react'
 import { cn } from '@/shared/utils/cn'
+import { FieldWrap, fieldControlBase } from './Field'
 
-type Props = InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string; hint?: string }
+export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
+  label?: string
+  error?: string
+  hint?: string
+  leftIcon?: ReactNode
+  rightAdornment?: ReactNode
+  wrapperClassName?: string
+}
 
-export function Input({ label, error, hint, className, id, ...rest }: Props) {
+export function Input({
+  label,
+  error,
+  hint,
+  leftIcon,
+  rightAdornment,
+  wrapperClassName,
+  className,
+  id,
+  ...rest
+}: InputProps) {
   const autoId = useId()
   const inputId = id ?? autoId
-  return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
-        {label}
-      </label>
+
+  const inputElement = (
+    <div className="relative flex items-center">
+      {leftIcon && (
+        <span className="pointer-events-none absolute left-3.5 flex items-center text-slate-grey-500">
+          {leftIcon}
+        </span>
+      )}
       <input
         {...rest}
         id={inputId}
         aria-invalid={!!error}
         className={cn(
-          'w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-500',
-          error ? 'border-red-500' : 'border-gray-300',
+          fieldControlBase,
+          leftIcon && 'pl-10',
+          rightAdornment && 'pr-10',
+          error ? 'border-error-500 focus:border-error-600 focus:ring-error-500/30' : 'border-cream-300',
           className,
         )}
       />
-      {error ? (
-        <span className="text-xs text-red-600">{error}</span>
-      ) : (
-        hint && <span className="text-xs text-gray-500">{hint}</span>
+      {rightAdornment && (
+        <span className="absolute right-3 flex items-center text-slate-grey-500">{rightAdornment}</span>
       )}
     </div>
+  )
+
+  if (!label && !error && !hint) {
+    return inputElement
+  }
+
+  return (
+    <FieldWrap label={label} error={error} hint={hint} id={inputId} className={wrapperClassName}>
+      {inputElement}
+    </FieldWrap>
   )
 }

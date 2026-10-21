@@ -1,4 +1,13 @@
 import { useRef, useState } from 'react'
+import {
+  HandPointingIcon,
+  LightningIcon,
+  MinusIcon,
+  PlusIcon,
+  ShuffleIcon,
+  SparkleIcon,
+  TicketIcon,
+} from '@phosphor-icons/react'
 import { useNavigate } from 'react-router'
 import { type BuyerDraft, type BuyerInput, BuyerForm, emptyBuyer, useCreateOrder } from '@/domains/checkout'
 import { Alert, Button, Card } from '@/shared/components'
@@ -28,7 +37,8 @@ export function BuyBox({ raffle, mode, onModeChange, selected, onDeselect }: Pro
   // Chave de idempotência da tentativa atual: reenviar (clique duplo, rede caindo) não duplica o pedido.
   const attemptKey = useRef<string | null>(null)
 
-  const clamp = (n: number) => Math.max(raffle.minPerOrder, Math.min(raffle.maxPerOrder, raffle.progress.available, n || 0))
+  const clamp = (n: number) =>
+    Math.max(raffle.minPerOrder, Math.min(raffle.maxPerOrder, raffle.progress.available, n || 0))
   const count = mode === 'pick' ? selected.size : qty
   const canPick = raffle.saleMode !== 'QUANTITY'
   const canQty = raffle.saleMode !== 'PICK'
@@ -37,7 +47,9 @@ export function BuyBox({ raffle, mode, onModeChange, selected, onDeselect }: Pro
     const msg = raffle.status === 'PAUSED' ? 'Vendas pausadas no momento.' : 'Vendas encerradas.'
     return <Alert tone="warning">{msg}</Alert>
   }
-  if (raffle.progress.available === 0) return <Alert tone="warning">Todos os números foram reservados ou vendidos.</Alert>
+  if (raffle.progress.available === 0) {
+    return <Alert tone="warning">Todos os números foram reservados ou vendidos.</Alert>
+  }
 
   const valid = count >= raffle.minPerOrder && count <= raffle.maxPerOrder
 
@@ -73,104 +85,164 @@ export function BuyBox({ raffle, mode, onModeChange, selected, onDeselect }: Pro
   }
 
   return (
-    <Card className="flex flex-col gap-4 p-5">
-      {canPick && canQty && step === 'choose' && (
-        <div className="grid grid-cols-2 rounded-lg bg-gray-100 p-1 text-sm font-medium">
-          {(['quantity', 'pick'] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => onModeChange(m)}
-              className={cn('rounded-md py-2', mode === m ? 'bg-white shadow-sm' : 'text-gray-600')}
-            >
-              {m === 'quantity' ? 'Aleatórios' : 'Escolher números'}
-            </button>
-          ))}
+    <Card className="overflow-hidden border-cream-300 p-0 shadow-md">
+      {/* Cabeçalho Royal Teal */}
+      <div className="royal-gradient flex items-center justify-between px-5 py-4 text-cream-50">
+        <div className="flex items-center gap-2">
+          <TicketIcon weight="duotone" className="size-5 text-anzac-400" />
+          <span className="font-wide text-sm font-bold">Garanta suas cotas</span>
         </div>
-      )}
-
-      {step === 'choose' && mode === 'quantity' && (
-        <>
-          {raffle.packages.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
-              {raffle.packages.map((p) => (
-                <button
-                  key={p.quantity}
-                  type="button"
-                  onClick={() => setQty(clamp(p.quantity))}
-                  className={cn(
-                    'relative rounded-lg border px-2 pb-2 pt-3 text-center text-sm font-semibold transition',
-                    qty === p.quantity ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-gray-300 hover:border-emerald-400',
-                  )}
-                >
-                  {p.highlighted && (
-                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-600 px-2 text-[10px] leading-4 text-white">
-                      Mais escolhido
-                    </span>
-                  )}
-                  +{p.quantity}
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center justify-center gap-3">
-            <Button type="button" variant="secondary" aria-label="Menos" onClick={() => setQty((q) => clamp(q - 1))}>
-              −
-            </Button>
-            <input
-              type="number"
-              aria-label="Quantidade de números"
-              className="w-24 rounded-lg border border-gray-300 px-3 py-2 text-center text-lg font-semibold"
-              value={qty}
-              min={raffle.minPerOrder}
-              max={raffle.maxPerOrder}
-              onChange={(e) => setQty(Number(e.target.value))}
-              onBlur={() => setQty((q) => clamp(q))}
-            />
-            <Button type="button" variant="secondary" aria-label="Mais" onClick={() => setQty((q) => clamp(q + 1))}>
-              +
-            </Button>
-          </div>
-        </>
-      )}
-
-      {step === 'choose' && mode === 'pick' && (
-        <p className="text-center text-sm text-gray-600">
-          {selected.size
-            ? `${selected.size} número(s) selecionado(s) na grade`
-            : `Escolha seus números na grade (até ${raffle.maxPerOrder}).`}
-        </p>
-      )}
-
-      <div className="text-center">
-        <p className="text-sm text-gray-600">
-          {count} × {formatCents(raffle.priceCents)}
-        </p>
-        <p className="text-2xl font-bold text-gray-900">{formatCents(count * raffle.priceCents)}</p>
-        <p className="text-xs text-gray-500">+ taxa do Pix no pagamento</p>
+        <span className="rounded-lg border border-anzac-400/30 bg-watercourse-950/50 px-2.5 py-1 text-xs font-bold text-anzac-300">
+          {formatCents(raffle.priceCents)} / cota
+        </span>
       </div>
 
-      {notice && <Alert tone="warning">{notice}</Alert>}
+      <div className="flex flex-col gap-4 p-5">
+        {canPick && canQty && step === 'choose' && (
+          <div className="grid grid-cols-2 rounded-xl border border-cream-300 bg-cream-200/60 p-1 text-xs font-bold">
+            {(['quantity', 'pick'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => onModeChange(m)}
+                className={cn(
+                  'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg py-2 transition',
+                  mode === m
+                    ? 'bg-watercourse-800 text-cream-50 shadow-xs'
+                    : 'text-slate-grey-700 hover:text-charcoal-900',
+                )}
+              >
+                {m === 'quantity' ? (
+                  <>
+                    <ShuffleIcon weight="bold" className="size-3.5 text-anzac-400" />
+                    Aleatórios
+                  </>
+                ) : (
+                  <>
+                    <HandPointingIcon weight="bold" className="size-3.5 text-anzac-400" />
+                    Escolher números
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
 
-      {step === 'choose' ? (
-        <Button type="button" disabled={!valid} className="py-3 text-base" onClick={() => setStep('buyer')}>
-          {mode === 'pick' && !selected.size ? 'Selecione os números' : 'Continuar'}
-        </Button>
-      ) : (
-        <>
-          {createOrder.error && !(createOrder.error instanceof ApiError && createOrder.error.status === 409 && notice) && (
-            <Alert tone="error">{createOrder.error.message}</Alert>
-          )}
-          <BuyerForm
-            value={buyer}
-            onChange={setBuyer}
-            submitLabel={`Reservar e pagar ${formatCents(count * raffle.priceCents)}`}
-            submitting={createOrder.isPending}
-            onSubmit={buy}
-            onCancel={() => setStep('choose')}
-          />
-        </>
-      )}
+        {step === 'choose' && mode === 'quantity' && (
+          <>
+            {raffle.packages.length > 0 && (
+              <div className="grid grid-cols-3 gap-2.5 pt-1">
+                {raffle.packages.map((p) => {
+                  const active = qty === p.quantity
+                  return (
+                    <button
+                      key={p.quantity}
+                      type="button"
+                      onClick={() => setQty(clamp(p.quantity))}
+                      className={cn(
+                        'relative cursor-pointer rounded-xl border px-2 pb-2.5 pt-3.5 text-center transition',
+                        active
+                          ? 'border-watercourse-800 bg-watercourse-50 text-watercourse-900 ring-2 ring-watercourse-700/30'
+                          : p.highlighted
+                            ? 'border-anzac-400 bg-anzac-50/70 text-charcoal-900 hover:border-anzac-500'
+                            : 'border-cream-300 bg-white text-charcoal-900 hover:border-anzac-400',
+                      )}
+                    >
+                      {p.highlighted && (
+                        <span className="gold-gradient absolute -top-2.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-0.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-extrabold text-charcoal-950 shadow-2xs">
+                          <SparkleIcon weight="fill" className="size-2.5" />
+                          Popular
+                        </span>
+                      )}
+                      <span className="font-wide block text-base font-extrabold">+{p.quantity}</span>
+                      <span className="block text-[11px] text-slate-grey-600">cotas</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                aria-label="Menos"
+                className="size-11 p-0"
+                onClick={() => setQty((q) => clamp(q - 1))}
+              >
+                <MinusIcon weight="bold" className="size-4" />
+              </Button>
+              <input
+                type="number"
+                aria-label="Quantidade de números"
+                className="w-28 rounded-xl border border-cream-300 bg-white px-3 py-2 text-center font-mono text-lg font-bold text-charcoal-900 outline-none focus:border-watercourse-700 focus:ring-2 focus:ring-anzac-400/40"
+                value={qty}
+                min={raffle.minPerOrder}
+                max={raffle.maxPerOrder}
+                onChange={(e) => setQty(Number(e.target.value))}
+                onBlur={() => setQty((q) => clamp(q))}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                aria-label="Mais"
+                className="size-11 p-0"
+                onClick={() => setQty((q) => clamp(q + 1))}
+              >
+                <PlusIcon weight="bold" className="size-4" />
+              </Button>
+            </div>
+          </>
+        )}
+
+        {step === 'choose' && mode === 'pick' && (
+          <div className="rounded-xl border border-cream-200 bg-cream-100/70 p-3 text-center text-sm text-slate-grey-700">
+            {selected.size ? (
+              <span className="font-semibold text-watercourse-800">
+                {selected.size} número(s) selecionado(s) na grade
+              </span>
+            ) : (
+              `Escolha seus números na grade ao lado (até ${raffle.maxPerOrder}).`
+            )}
+          </div>
+        )}
+
+        <div className="rounded-2xl border border-cream-200 bg-cream-100/80 p-4 text-center">
+          <p className="text-xs font-medium text-slate-grey-600">
+            {count} × {formatCents(raffle.priceCents)}
+          </p>
+          <p className="font-wide mt-0.5 text-3xl font-extrabold text-charcoal-900">
+            {formatCents(count * raffle.priceCents)}
+          </p>
+          <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-watercourse-800">
+            <LightningIcon weight="fill" className="size-3.5 text-anzac-500" />
+            Reserva imediata · + taxa do Pix no pagamento
+          </p>
+        </div>
+
+        {notice && <Alert tone="warning">{notice}</Alert>}
+
+        {step === 'choose' ? (
+          <Button type="button" variant="buy" disabled={!valid} className="py-3.5 text-base" onClick={() => setStep('buyer')}>
+            <TicketIcon weight="bold" className="size-5" />
+            {mode === 'pick' && !selected.size ? 'Selecione os números' : 'Continuar para reserva'}
+          </Button>
+        ) : (
+          <>
+            {createOrder.error && !(createOrder.error instanceof ApiError && createOrder.error.status === 409 && notice) && (
+              <Alert tone="error">{createOrder.error.message}</Alert>
+            )}
+            <BuyerForm
+              value={buyer}
+              onChange={setBuyer}
+              submitLabel={`Reservar e pagar ${formatCents(count * raffle.priceCents)}`}
+              submitting={createOrder.isPending}
+              onSubmit={buy}
+              onCancel={() => setStep('choose')}
+            />
+          </>
+        )}
+      </div>
     </Card>
   )
 }

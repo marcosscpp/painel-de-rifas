@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react'
+import { FloppyDiskIcon } from '@phosphor-icons/react'
 import { Alert, Button, Input, Select, Textarea } from '@/shared/components'
 import type { SaleMode } from '@/shared/types'
 import { centsToInput, formatCents, isoToLocalInput, localInputToIso, parseMoneyToCents } from '@/shared/utils/format'
@@ -117,6 +118,7 @@ export function RaffleDetailsForm({ raffle, submitting, error, submitLabel, onSu
 
       <div>
         <Button type="submit" loading={submitting}>
+          <FloppyDiskIcon weight="bold" className="size-4" />
           {submitLabel}
         </Button>
       </div>

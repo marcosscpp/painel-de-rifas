@@ -1,6 +1,15 @@
 import { useState } from 'react'
+import {
+  ArrowLeftIcon,
+  CalendarBlankIcon,
+  FileTextIcon,
+  GridNineIcon,
+  ScalesIcon,
+  TicketIcon,
+  TrophyIcon,
+} from '@phosphor-icons/react'
 import { Link, useParams } from 'react-router'
-import { Alert, Card, FullPageSpinner, ProgressBar, RaffleStatusBadge } from '@/shared/components'
+import { Alert, Button, Card, FullPageSpinner, ProgressBar, RaffleStatusBadge } from '@/shared/components'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle'
 import { useSocketEvent } from '@/shared/hooks/useSocket'
 import { ApiError } from '@/shared/lib/http'
@@ -33,17 +42,24 @@ export function RafflePage() {
   if (isLoading) return <FullPageSpinner />
   if (error instanceof ApiError && error.status === 404) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <p className="text-gray-700">Rifa não encontrada.</p>
-        <Link to="/" className="text-emerald-700 underline">
-          Ver rifas abertas
+      <div className="flex flex-col items-center gap-4 py-16 text-center">
+        <div className="flex size-16 items-center justify-center rounded-2xl border border-anzac-300 bg-anzac-50 text-anzac-600">
+          <TicketIcon weight="duotone" className="size-8" />
+        </div>
+        <p className="font-wide text-lg font-bold text-charcoal-900">Campanha não encontrada</p>
+        <Link to="/">
+          <Button variant="primary">
+            <ArrowLeftIcon weight="bold" className="size-4" />
+            Ver rifas abertas
+          </Button>
         </Link>
       </div>
     )
   }
   if (error || !raffle) return <Alert tone="error">Não foi possível carregar a rifa. Tente de novo em instantes.</Alert>
 
-  const mode: BuyMode = raffle.saleMode === 'PICK' ? 'pick' : raffle.saleMode === 'QUANTITY' ? 'quantity' : (modeChoice ?? 'quantity')
+  const mode: BuyMode =
+    raffle.saleMode === 'PICK' ? 'pick' : raffle.saleMode === 'QUANTITY' ? 'quantity' : (modeChoice ?? 'quantity')
   const toggle = (n: number) =>
     setSelected((s) => {
       const next = new Set(s)
@@ -60,67 +76,129 @@ export function RafflePage() {
 
   const p = raffle.progress
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+    <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
       <div className="flex min-w-0 flex-col gap-6">
-        {raffle.cover && <img src={raffle.cover.full} alt="" className="aspect-video w-full rounded-xl object-cover" />}
+        {/* Hero Card da Campanha */}
+        <Card className="overflow-hidden p-0">
+          {raffle.cover && (
+            <div className="relative aspect-video w-full bg-watercourse-950">
+              <img src={raffle.cover.full} alt="" className="h-full w-full object-cover" />
+              <div className="absolute top-4 right-4">
+                <RaffleStatusBadge status={raffle.status} />
+              </div>
+            </div>
+          )}
 
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">{raffle.title}</h1>
-            <RaffleStatusBadge status={raffle.status} />
+          <div className="flex flex-col gap-4 p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1">
+                {!raffle.cover && (
+                  <div className="mb-2">
+                    <RaffleStatusBadge status={raffle.status} />
+                  </div>
+                )}
+                <h1 className="font-wide text-2xl font-extrabold text-charcoal-900 sm:text-3xl">{raffle.title}</h1>
+                {raffle.drawDate && (
+                  <p className="inline-flex items-center gap-1.5 text-sm text-slate-grey-600">
+                    <CalendarBlankIcon weight="duotone" className="size-4 text-watercourse-700" />
+                    Sorteio pela Loteria Federal em <strong className="text-charcoal-900">{formatDateTime(raffle.drawDate)}</strong>
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-anzac-300 bg-anzac-50 px-4 py-2.5 text-right">
+                <span className="block text-[11px] font-semibold tracking-wider text-anzac-800 uppercase">Por apenas</span>
+                <span className="font-wide text-2xl font-extrabold text-watercourse-800">{formatCents(raffle.priceCents)}</span>
+                <span className="block text-[11px] text-slate-grey-600">por bilhete</span>
+              </div>
+            </div>
+
+            <ProgressBar
+              percent={p.percent}
+              label={`${p.percent}% vendido · ${formatInt(p.available)} números disponíveis`}
+            />
           </div>
-          <p className="text-xl font-bold text-emerald-700">
-            {formatCents(raffle.priceCents)} <span className="text-sm font-normal text-gray-500">por número</span>
-          </p>
-          <ProgressBar percent={p.percent} label={`${p.percent}% vendido · ${formatInt(p.available)} números disponíveis`} />
-          {raffle.drawDate && <p className="text-sm text-gray-600">Sorteio pela Loteria Federal em {formatDateTime(raffle.drawDate)}</p>}
-        </div>
+        </Card>
 
         {raffle.result && (
-          <Alert tone="success">
-            Resultado: número {raffle.result.winningNumber} (concurso {raffle.result.lotteryContest} da Loteria Federal)
-          </Alert>
+          <div className="royal-gradient flex items-center gap-4 rounded-2xl border border-anzac-400 p-5 text-cream-50 shadow-md">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-anzac-400 text-charcoal-950">
+              <TrophyIcon weight="fill" className="size-7" />
+            </div>
+            <div>
+              <p className="text-xs font-bold tracking-wider text-anzac-300 uppercase">Resultado Oficial</p>
+              <p className="font-wide text-lg font-extrabold">
+                Bilhete premiado: <span className="font-mono text-anzac-300">{raffle.result.winningNumber}</span>
+              </p>
+              <p className="text-xs text-cream-100/80">Concurso {raffle.result.lotteryContest} da Loteria Federal</p>
+            </div>
+          </div>
         )}
 
         {mode === 'pick' && raffle.status === 'ACTIVE' && (
-          <Card className="p-5">
-            <h2 className="mb-3 font-semibold text-gray-900">Escolha seus números</h2>
+          <Card className="p-5 sm:p-6">
+            <div className="mb-4 flex items-center gap-2.5 border-b border-cream-200 pb-3">
+              <GridNineIcon weight="duotone" className="size-5 text-watercourse-700" />
+              <h2 className="font-wide text-lg font-bold text-charcoal-900">Escolha seus números</h2>
+            </div>
             {lost.length > 0 && (
-              <div className="mb-3">
+              <div className="mb-4">
                 <Alert tone="warning">
                   {lost.map((n) => padNumber(n, raffle.totalNumbers)).join(', ')} acabou de ser reservado por outra pessoa e saiu da sua seleção.
                 </Alert>
               </div>
             )}
-            <NumberGrid slug={raffle.slug} total={raffle.totalNumbers} selected={selected} max={raffle.maxPerOrder} onToggle={toggle} />
+            <NumberGrid
+              slug={raffle.slug}
+              total={raffle.totalNumbers}
+              selected={selected}
+              max={raffle.maxPerOrder}
+              onToggle={toggle}
+            />
           </Card>
         )}
 
-        <Card className="p-5">
-          <h2 className="mb-2 font-semibold text-gray-900">Descrição</h2>
-          <p className="whitespace-pre-line text-sm text-gray-700">{raffle.description}</p>
+        <Card className="p-5 sm:p-6">
+          <div className="mb-3 flex items-center gap-2.5 border-b border-cream-200 pb-3">
+            <FileTextIcon weight="duotone" className="size-5 text-watercourse-700" />
+            <h2 className="font-wide text-lg font-bold text-charcoal-900">Sobre a campanha</h2>
+          </div>
+          <p className="whitespace-pre-line text-sm leading-relaxed text-slate-grey-700">{raffle.description}</p>
         </Card>
 
         {raffle.prizes.length > 0 && (
-          <Card className="flex flex-col gap-6 p-5">
-            <h2 className="font-semibold text-gray-900">Prêmios</h2>
-            {raffle.prizes.map((prize) => (
-              <PrizeGallery key={prize.position} prize={prize} />
-            ))}
+          <Card className="flex flex-col gap-6 p-5 sm:p-6">
+            <div className="flex items-center gap-2.5 border-b border-cream-200 pb-3">
+              <TrophyIcon weight="duotone" className="size-5 text-anzac-600" />
+              <h2 className="font-wide text-lg font-bold text-charcoal-900">Prêmios da campanha</h2>
+            </div>
+            <div className="flex flex-col gap-6">
+              {raffle.prizes.map((prize) => (
+                <PrizeGallery key={prize.position} prize={prize} />
+              ))}
+            </div>
           </Card>
         )}
 
         {raffle.rules && (
-          <Card className="p-5">
-            <details>
-              <summary className="cursor-pointer font-semibold text-gray-900">Regulamento</summary>
-              <p className="mt-3 whitespace-pre-line text-sm text-gray-700">{raffle.rules}</p>
+          <Card className="p-5 sm:p-6">
+            <details className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between font-wide text-base font-bold text-charcoal-900">
+                <span className="flex items-center gap-2.5">
+                  <ScalesIcon weight="duotone" className="size-5 text-watercourse-700" />
+                  Regulamento e termos do sorteio
+                </span>
+                <span className="text-xs font-semibold text-watercourse-700 group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <p className="mt-4 border-t border-cream-200 pt-4 whitespace-pre-line text-sm leading-relaxed text-slate-grey-700">
+                {raffle.rules}
+              </p>
             </details>
           </Card>
         )}
       </div>
 
-      <aside className="order-first lg:order-none lg:sticky lg:top-6 lg:self-start">
+      <aside className="order-first lg:order-none lg:sticky lg:top-20 lg:self-start">
         <BuyBox raffle={raffle} mode={mode} onModeChange={setMode} selected={selected} onDeselect={deselect} />
       </aside>
     </div>

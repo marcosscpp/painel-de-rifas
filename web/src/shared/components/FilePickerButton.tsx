@@ -1,4 +1,5 @@
 import { type ChangeEvent, useRef } from 'react'
+import { UploadSimpleIcon } from '@phosphor-icons/react'
 import { Button } from './Button'
 
 const MB = 1024 * 1024
@@ -43,6 +44,7 @@ export function FilePickerButton({
     <>
       <input ref={ref} type="file" hidden accept={accept} multiple={multiple} onChange={change} />
       <Button type="button" variant="secondary" loading={loading} disabled={disabled} onClick={() => ref.current?.click()}>
+        <UploadSimpleIcon weight="bold" className="size-4 text-watercourse-700" />
         {label}
       </Button>
     </>

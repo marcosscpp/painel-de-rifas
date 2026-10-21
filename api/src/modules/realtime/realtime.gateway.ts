@@ -12,8 +12,6 @@ const SLUG = /^[a-z0-9-]{1,80}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_ROOMS_PER_SOCKET = 6;
 
-// Só leitura: o cliente entra em salas e recebe eventos; nada é alterado por aqui.
-// Sala do pedido exige o id (UUID aleatório), que só quem criou o pedido conhece.
 @WebSocketGateway({
   cors: {
     origin: (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((o) => o.trim()),
@@ -49,7 +47,6 @@ export class RealtimeGateway implements OnGatewayInit {
   }
 
   private join(socket: Socket, room: string) {
-    // socket.rooms inclui a sala própria do socket
     if (socket.rooms.size > MAX_ROOMS_PER_SOCKET) return { ok: false };
     void socket.join(room);
     return { ok: true };

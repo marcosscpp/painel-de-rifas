@@ -1,4 +1,12 @@
 import type { ReactNode } from 'react'
+import {
+  ArrowSquareOutIcon,
+  FileTextIcon,
+  ImageIcon,
+  PackageIcon,
+  SlidersHorizontalIcon,
+  TrophyIcon,
+} from '@phosphor-icons/react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Alert, Card, FullPageSpinner, PageHeader, ProgressBar, RaffleStatusBadge } from '@/shared/components'
 import { formatInt } from '@/shared/utils/format'
@@ -11,12 +19,31 @@ import { useAdminRaffle, useRaffleMutation } from '../hooks/useAdminRaffles'
 import { adminRafflesApi } from '../services/admin-raffles.api'
 import type { AdminRaffle, RaffleInput } from '../types'
 
-function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+function Section({
+  title,
+  description,
+  icon,
+  children,
+}: {
+  title: string
+  description?: string
+  icon?: ReactNode
+  children: ReactNode
+}) {
   return (
     <Card className="p-6">
-      <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-      {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
-      <div className="mt-4">{children}</div>
+      <div className="flex items-start gap-3 border-b border-cream-200 pb-3.5">
+        {icon && (
+          <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border border-anzac-200 bg-anzac-50 text-watercourse-800">
+            {icon}
+          </span>
+        )}
+        <div>
+          <h2 className="font-wide text-lg font-bold text-charcoal-900">{title}</h2>
+          {description && <p className="mt-0.5 text-sm text-slate-grey-600">{description}</p>}
+        </div>
+      </div>
+      <div className="mt-5">{children}</div>
     </Card>
   )
 }
@@ -31,17 +58,23 @@ function NewRaffle() {
   const create = useRaffleMutation((input: RaffleInput) => adminRafflesApi.create(input))
 
   return (
-    <>
-      <PageHeader title="Nova rifa" />
-      <Section title="Dados da rifa" description="Depois de criar, você adiciona capa, prêmios e pacotes.">
+    <div className="max-w-4xl">
+      <PageHeader title="Nova rifa" subtitle="Configure os dados principais para iniciar o rascunho da campanha" />
+      <Section
+        title="Dados da rifa"
+        description="Depois de criar, você adiciona capa, prêmios e pacotes."
+        icon={<FileTextIcon weight="duotone" className="size-5" />}
+      >
         <RaffleDetailsForm
           submitLabel="Criar rascunho"
           submitting={create.isPending}
           error={create.error?.message}
-          onSubmit={(input) => create.mutate(input, { onSuccess: (r) => navigate(`/admin/rifas/${r.id}`, { replace: true }) })}
+          onSubmit={(input) =>
+            create.mutate(input, { onSuccess: (r) => navigate(`/admin/rifas/${r.id}`, { replace: true }) })
+          }
         />
       </Section>
-    </>
+    </div>
   )
 }
 
@@ -55,12 +88,18 @@ function EditRaffle({ id }: { id: string }) {
     <div className="flex max-w-4xl flex-col gap-6">
       <PageHeader
         title={raffle.title}
+        subtitle={`Slug: /rifa/${raffle.slug}`}
         actions={
           <div className="flex items-center gap-3">
             <RaffleStatusBadge status={raffle.status} />
             {raffle.status !== 'DRAFT' && (
-              <Link to={`/rifa/${raffle.slug}`} target="_blank" className="text-sm text-emerald-700 underline">
+              <Link
+                to={`/rifa/${raffle.slug}`}
+                target="_blank"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-cream-300 bg-cream-50 px-3 py-1.5 text-xs font-bold text-watercourse-800 transition hover:border-anzac-400 hover:bg-white"
+              >
                 Ver no site
+                <ArrowSquareOutIcon weight="bold" className="size-3.5" />
               </Link>
             )}
           </div>
@@ -76,24 +115,32 @@ function EditRaffle({ id }: { id: string }) {
         </Card>
       )}
 
-      <Section title="Status">
+      <Section title="Status e publicação" icon={<SlidersHorizontalIcon weight="duotone" className="size-5" />}>
         <RaffleActions raffle={raffle} />
       </Section>
 
-      <Section title="Dados da rifa">
+      <Section title="Dados da rifa" icon={<FileTextIcon weight="duotone" className="size-5" />}>
         {/* key: recarrega o formulário quando a rifa muda de status (campos travados) */}
         <EditDetails key={raffle.status} raffle={raffle} />
       </Section>
 
-      <Section title="Capa">
+      <Section title="Imagem de capa" icon={<ImageIcon weight="duotone" className="size-5" />}>
         <CoverSection raffle={raffle} />
       </Section>
 
-      <Section title="Prêmios" description="O 1º prêmio aparece em destaque na página da rifa.">
+      <Section
+        title="Prêmios"
+        description="O 1º prêmio aparece em destaque na página da rifa."
+        icon={<TrophyIcon weight="duotone" className="size-5" />}
+      >
         <PrizesEditor raffle={raffle} />
       </Section>
 
-      <Section title="Pacotes" description={`Atalhos de compra. Cada pacote precisa ficar entre ${raffle.minPerOrder} e ${raffle.maxPerOrder} números.`}>
+      <Section
+        title="Pacotes promocionais"
+        description={`Atalhos de compra. Cada pacote precisa ficar entre ${raffle.minPerOrder} e ${raffle.maxPerOrder} números.`}
+        icon={<PackageIcon weight="duotone" className="size-5" />}
+      >
         <PackagesEditor raffle={raffle} />
       </Section>
     </div>

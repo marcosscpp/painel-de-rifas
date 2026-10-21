@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CaretLeftIcon, CaretRightIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { Button, Spinner } from '@/shared/components'
 import { cn } from '@/shared/utils/cn'
 import { formatInt, padNumber } from '@/shared/utils/format'
@@ -24,59 +25,79 @@ export function NumberGrid({ slug, total, selected, max, onToggle }: Props) {
   const goTo = (n: number) => setFrom(Math.floor(Math.max(0, Math.min(total - 1, n)) / GRID_PAGE) * GRID_PAGE)
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
-        <span className="flex items-center gap-1">
-          <span className="size-3 rounded border border-gray-300 bg-white" /> Livre
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-cream-200 bg-cream-100/70 px-3.5 py-2.5 text-xs font-medium text-slate-grey-700">
+        <span className="flex items-center gap-1.5">
+          <span className="size-3.5 rounded border border-cream-300 bg-white" /> Livre
         </span>
-        <span className="flex items-center gap-1">
-          <span className="size-3 rounded bg-emerald-600" /> Selecionado
+        <span className="flex items-center gap-1.5">
+          <span className="size-3.5 rounded bg-watercourse-800 ring-1 ring-anzac-400" /> Selecionado
         </span>
-        <span className="flex items-center gap-1">
-          <span className="size-3 rounded bg-amber-200" /> Reservado
+        <span className="flex items-center gap-1.5">
+          <span className="stripes size-3.5 rounded border border-anzac-300" /> Reservado
         </span>
-        <span className="flex items-center gap-1">
-          <span className="size-3 rounded bg-gray-300" /> Vendido
+        <span className="flex items-center gap-1.5">
+          <span className="size-3.5 rounded bg-cream-300" /> Vendido
         </span>
       </div>
 
       {pages > 1 && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <Button type="button" variant="secondary" disabled={from === 0} onClick={() => setFrom(from - GRID_PAGE)}>
-            ‹
-          </Button>
-          <span>
-            {padNumber(from, total)} a {padNumber(Math.min(from + GRID_PAGE, total) - 1, total)}
-          </span>
-          <Button type="button" variant="secondary" disabled={from + GRID_PAGE >= total} onClick={() => setFrom(from + GRID_PAGE)}>
-            ›
-          </Button>
-          <form
-            className="flex items-center gap-1"
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (jump) goTo(Number(jump))
-            }}
-          >
-            <input
-              type="number"
-              min={0}
-              max={total - 1}
-              placeholder="Ir para nº"
-              aria-label="Ir para o número"
-              className="w-28 rounded-lg border border-gray-300 px-2 py-1.5"
-              value={jump}
-              onChange={(e) => setJump(e.target.value)}
-            />
-          </form>
-          <span className="text-xs text-gray-500">{formatInt(total)} números</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={from === 0}
+              className="px-2.5"
+              onClick={() => setFrom(from - GRID_PAGE)}
+            >
+              <CaretLeftIcon weight="bold" className="size-4" />
+            </Button>
+            <span className="font-mono text-xs font-bold text-charcoal-900">
+              {padNumber(from, total)} — {padNumber(Math.min(from + GRID_PAGE, total) - 1, total)}
+            </span>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={from + GRID_PAGE >= total}
+              className="px-2.5"
+              onClick={() => setFrom(from + GRID_PAGE)}
+            >
+              <CaretRightIcon weight="bold" className="size-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <form
+              className="relative flex items-center"
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (jump) goTo(Number(jump))
+              }}
+            >
+              <MagnifyingGlassIcon className="pointer-events-none absolute left-2.5 size-4 text-slate-grey-500" />
+              <input
+                type="number"
+                min={0}
+                max={total - 1}
+                placeholder="Ir para nº"
+                aria-label="Ir para o número"
+                className="w-32 rounded-xl border border-cream-300 bg-white py-1.5 pr-3 pl-8 text-xs font-medium outline-none focus:border-watercourse-700"
+                value={jump}
+                onChange={(e) => setJump(e.target.value)}
+              />
+            </form>
+            <span className="text-xs text-slate-grey-600">{formatInt(total)} cotas</span>
+          </div>
         </div>
       )}
 
       {isLoading || !page ? (
-        <Spinner className="text-emerald-600" />
+        <div className="flex justify-center py-8">
+          <Spinner className="size-6 text-watercourse-700" />
+        </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-1">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(3.4rem,1fr))] gap-1.5">
           {page.statuses.split('').map((s, i) => {
             const n = page.from + i
             const isSel = selected.has(n)
@@ -89,11 +110,13 @@ export function NumberGrid({ slug, total, selected, max, onToggle }: Props) {
                 onClick={() => onToggle(n)}
                 aria-pressed={isSel}
                 className={cn(
-                  'rounded py-1.5 font-mono text-xs font-semibold transition',
-                  isSel && 'bg-emerald-600 text-white',
-                  !isSel && s === '0' && 'border border-gray-300 bg-white hover:border-emerald-500 disabled:opacity-40',
-                  !isSel && s === '1' && 'cursor-not-allowed bg-amber-200 text-amber-900',
-                  !isSel && s === '2' && 'cursor-not-allowed bg-gray-300 text-gray-500 line-through',
+                  'rounded-lg py-1.5 font-mono text-xs font-bold transition',
+                  isSel && 'bg-watercourse-800 text-anzac-300 shadow-xs ring-2 ring-anzac-400',
+                  !isSel &&
+                    s === '0' &&
+                    'cursor-pointer border border-cream-300 bg-white text-charcoal-900 hover:border-watercourse-600 hover:bg-watercourse-50/50 disabled:opacity-40',
+                  !isSel && s === '1' && 'stripes cursor-not-allowed border border-anzac-300 text-anzac-900',
+                  !isSel && s === '2' && 'cursor-not-allowed bg-cream-200 text-slate-grey-400 line-through',
                 )}
               >
                 {padNumber(n, total)}

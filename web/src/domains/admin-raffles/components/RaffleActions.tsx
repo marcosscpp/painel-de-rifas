@@ -1,8 +1,9 @@
+import { LockKeyIcon, PauseIcon, PlayIcon, RocketLaunchIcon, TrashIcon } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router'
 import { Alert, Button } from '@/shared/components'
 import { formatInt } from '@/shared/utils/format'
-import { adminRafflesApi } from '../services/admin-raffles.api'
 import { useDeleteRaffle, useRaffleMutation } from '../hooks/useAdminRaffles'
+import { adminRafflesApi } from '../services/admin-raffles.api'
 import type { AdminRaffle, RaffleAction } from '../types'
 
 const confirmText: Record<RaffleAction, (r: AdminRaffle) => string> = {
@@ -26,37 +27,42 @@ export function RaffleActions({ raffle }: { raffle: AdminRaffle }) {
   const s = raffle.status
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2.5">
         {s === 'DRAFT' && (
-          <Button loading={act.isPending && act.variables === 'publish'} onClick={() => run('publish')}>
+          <Button variant="buy" loading={act.isPending && act.variables === 'publish'} onClick={() => run('publish')}>
+            <RocketLaunchIcon weight="bold" className="size-4" />
             Publicar rifa
           </Button>
         )}
         {s === 'ACTIVE' && (
           <Button variant="secondary" loading={act.isPending && act.variables === 'pause'} onClick={() => run('pause')}>
+            <PauseIcon weight="bold" className="size-4" />
             Pausar vendas
           </Button>
         )}
         {s === 'PAUSED' && (
           <Button loading={act.isPending && act.variables === 'resume'} onClick={() => run('resume')}>
+            <PlayIcon weight="bold" className="size-4" />
             Retomar vendas
           </Button>
         )}
         {(s === 'ACTIVE' || s === 'PAUSED') && (
           <Button variant="danger" loading={act.isPending && act.variables === 'close'} onClick={() => run('close')}>
+            <LockKeyIcon weight="bold" className="size-4" />
             Encerrar vendas
           </Button>
         )}
         {s === 'DRAFT' && (
           <Button
             variant="ghost"
-            className="text-red-600"
+            className="text-alert hover:bg-alert-soft"
             loading={del.isPending}
             onClick={() =>
               confirm('Excluir este rascunho? Não dá para desfazer.') &&
               del.mutate(raffle.id, { onSuccess: () => navigate('/admin/rifas', { replace: true }) })
             }
           >
+            <TrashIcon className="size-4" />
             Excluir rascunho
           </Button>
         )}

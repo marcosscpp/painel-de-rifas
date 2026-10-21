@@ -1,1 +1,203 @@
-@import "tailwindcss";
+@import '@fontsource-variable/archivo/wdth.css';
+@import 'tailwindcss';
+
+/*
+  Identidade Visual: ROYAL TEAL & ANTIQUE GOLD (Anzac + Watercourse + Neutros)
+  Escalas completas estilo Tailwind (50–950) + tokens semânticos da aplicação.
+*/
+@theme {
+  --font-sans: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Cinzel', 'Archivo Variable', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* Anzac — Antique Gold (#d4af37 no 400) */
+  --color-anzac-50: #fbf8eb;
+  --color-anzac-100: #f5efcd;
+  --color-anzac-200: #ecde9f;
+  --color-anzac-300: #e1c868;
+  --color-anzac-400: #d4af37;
+  --color-anzac-500: #c39c2b;
+  --color-anzac-600: #a57b22;
+  --color-anzac-700: #825c1e;
+  --color-anzac-800: #6c4b1f;
+  --color-anzac-900: #5c4020;
+  --color-anzac-950: #35220e;
+
+  /* Watercourse — Royal Teal / Emerald (#0d6352 no 800) */
+  --color-watercourse-50: #edfcf6;
+  --color-watercourse-100: #d4f7e8;
+  --color-watercourse-200: #aceed5;
+  --color-watercourse-300: #76dfbe;
+  --color-watercourse-400: #3ec9a2;
+  --color-watercourse-500: #1bae8a;
+  --color-watercourse-600: #0e8d70;
+  --color-watercourse-700: #0b715c;
+  --color-watercourse-800: #0d6352;
+  --color-watercourse-900: #0b493e;
+  --color-watercourse-950: #052923;
+
+  /* Cream — Neutro Quente / Superfície (#f8f3eb no 100) */
+  --color-cream-50: #fdfbf7;
+  --color-cream-100: #f8f3eb;
+  --color-cream-200: #efe5d4;
+  --color-cream-300: #e3d2b6;
+  --color-cream-400: #d2b892;
+  --color-cream-500: #bf9d70;
+  --color-cream-600: #a88255;
+  --color-cream-700: #8c6844;
+  --color-cream-800: #73553b;
+  --color-cream-900: #5e4632;
+  --color-cream-950: #332419;
+
+  /* Slate Grey — Neutro Intermediário / Apoio (#5c6770 no 600) */
+  --color-slate-grey-50: #f6f7f8;
+  --color-slate-grey-100: #eceef0;
+  --color-slate-grey-200: #d5dadd;
+  --color-slate-grey-300: #b1bac0;
+  --color-slate-grey-400: #88949d;
+  --color-slate-grey-500: #6b7882;
+  --color-slate-grey-600: #5c6770;
+  --color-slate-grey-700: #4a525a;
+  --color-slate-grey-800: #40464c;
+  --color-slate-grey-900: #383c42;
+  --color-slate-grey-950: #23262a;
+
+  /* Charcoal — Neutro Escuro / Tipografia Principal (#232323 no 900) */
+  --color-charcoal-50: #f6f6f6;
+  --color-charcoal-100: #e7e7e7;
+  --color-charcoal-200: #d1d1d1;
+  --color-charcoal-300: #b0b0b0;
+  --color-charcoal-400: #888888;
+  --color-charcoal-500: #6d6d6d;
+  --color-charcoal-600: #5d5d5d;
+  --color-charcoal-700: #4f4f4f;
+  --color-charcoal-800: #454545;
+  --color-charcoal-900: #232323;
+  --color-charcoal-950: #141414;
+
+  /* Warning — Âmbar de Alerta e Atenção (50–950) */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+  --color-warning-950: #451a03;
+
+  /* Error — Rubi / Carmesim de Erro e Ações Destrutivas (50–950) */
+  --color-error-50: #fef2f2;
+  --color-error-100: #fee2e2;
+  --color-error-200: #fecaca;
+  --color-error-300: #fca5a5;
+  --color-error-400: #f87171;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  --color-error-800: #991b1b;
+  --color-error-900: #7f1d1d;
+  --color-error-950: #450a0a;
+
+  /* Aliases semânticos conectados às escalas */
+  --color-ink: var(--color-charcoal-900);
+  --color-ink-soft: var(--color-slate-grey-700);
+  --color-muted: var(--color-slate-grey-600);
+  --color-paper: var(--color-cream-100);
+  --color-surface: var(--color-cream-50);
+  --color-line: var(--color-cream-200);
+  --color-line-strong: var(--color-cream-300);
+
+  --color-gold: var(--color-anzac-400);
+  --color-gold-deep: var(--color-anzac-600);
+  --color-gold-soft: var(--color-anzac-50);
+
+  --color-win: var(--color-watercourse-700);
+  --color-win-soft: var(--color-watercourse-50);
+
+  --color-alert: var(--color-error-700);
+  --color-alert-soft: var(--color-error-50);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--color-cream-100);
+    color: var(--color-charcoal-900);
+    font-feature-settings: 'tnum' 1; /* números alinhados em preço, contagem e grade */
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-anzac-500);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility font-wide {
+  font-stretch: 118%;
+}
+
+@utility font-narrow {
+  font-stretch: 82%;
+}
+
+@utility royal-gradient {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-watercourse-950) 0%,
+    var(--color-watercourse-800) 55%,
+    var(--color-watercourse-700) 100%
+  );
+}
+
+@utility gold-gradient {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-anzac-300) 0%,
+    var(--color-anzac-400) 50%,
+    var(--color-anzac-500) 100%
+  );
+}
+
+/*
+  Bilhete: recorte em meia-lua dos dois lados, na altura do picote (--cut, medido de baixo).
+  O elemento filho .perforation desenha a linha picotada na mesma altura.
+*/
+@utility ticket {
+  --notch: 11px;
+  --cut: 76px;
+  -webkit-mask:
+    radial-gradient(circle var(--notch) at 0 calc(100% - var(--cut)), #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% calc(100% - var(--cut)), #0000 98%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle var(--notch) at 0 calc(100% - var(--cut)), #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% calc(100% - var(--cut)), #0000 98%, #000) right / 51% 100% no-repeat;
+}
+
+@utility perforation {
+  background-image: linear-gradient(to right, var(--color-cream-300) 55%, transparent 0);
+  background-size: 10px 2px;
+  background-repeat: repeat-x;
+  height: 2px;
+}
+
+/* Número reservado por outra pessoa: listrado em dourado suave, lê como "ocupado agora". */
+@utility stripes {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--color-anzac-100) 0 6px,
+    #fff 6px 12px
+  );
+}
