@@ -12,7 +12,7 @@ Construir o site de rifas de **um único cliente** (projeto freelance, não é S
 
 ## 2. Referências
 
-Análise completa: [`referencias/analise-rea.md`](referencias/analise-rea.md)
+Análise completa: [`docs/analise-rea.md`](docs/analise-rea.md)
 
 | Site | O que é | Por que olhar |
 |------|---------|---------------|
