@@ -157,7 +157,8 @@ model RaffleNumber {
   order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@id([raffleId, number])
-  @@index([raffleId, status])
+  // number no fim do índice: varrer livres em ordem sem ordenar a tabela toda.
+  @@index([raffleId, status, number])
   @@index([orderId])
   @@map("raffle_numbers")
 }

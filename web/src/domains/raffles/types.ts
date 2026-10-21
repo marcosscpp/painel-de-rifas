@@ -32,3 +32,8 @@ export type RaffleDetail = Omit<RaffleSummary, 'mainPrize'> & {
   prizes: PublicPrize[]
   result: { lotteryContest: string | null; winningNumber: number | null; drawnAt: string | null } | null
 }
+
+// Página da grade: um caractere por número (0 livre, 1 reservado, 2 pago).
+export type NumbersPage = { from: number; size: number; total: number; statuses: string }
+
+export type NumbersEvent = { slug: string; status: 'AVAILABLE' | 'RESERVED' | 'PAID'; numbers: number[] }

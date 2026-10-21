@@ -15,6 +15,7 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(ctx: ExecutionContext): boolean {
+    if (ctx.getType() !== 'http') return true; // WebSocket: só leitura, validado no gateway
     const roles = this.reflector.getAllAndOverride<Role[] | undefined>(ROLES_KEY, [
       ctx.getHandler(),
       ctx.getClass(),

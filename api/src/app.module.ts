@@ -2,7 +2,8 @@ import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { HttpThrottlerGuard } from './common/guards/http-throttler.guard.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 import { OriginCheckMiddleware } from './common/middleware/origin-check.middleware.js';
@@ -44,8 +45,8 @@ import { UsersModule } from './modules/users/users.module.js';
     UploadsModule,
   ],
   providers: [
-    // Ordem importa: rate limit → autenticação → papel.
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Ordem importa: rate limit → autenticação → papel. Os três valem só para HTTP.
+    { provide: APP_GUARD, useClass: HttpThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

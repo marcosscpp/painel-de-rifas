@@ -1,5 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
+import { RealtimeGateway } from './realtime.gateway.js';
+import { RealtimeService } from './realtime.service.js';
 
-// Socket.IO: sala por rifa (grade e progresso) e por pedido (confirmação do Pix).
-@Module({})
+@Global()
+@Module({
+  providers: [RealtimeGateway, RealtimeService],
+  exports: [RealtimeService],
+})
 export class RealtimeModule {}

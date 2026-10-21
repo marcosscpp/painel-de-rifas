@@ -43,6 +43,14 @@ docker compose exec api npm run admin:create   # admin@rifas.local / admin-dev-1
 
 Código em `api/` e `web/` recarrega sozinho. Ao mudar dependências: `docker compose up --build -V`. Portas mudam com `API_PORT` e `DB_PORT` num `.env` na raiz.
 
+### Teste de carga da reserva
+
+```bash
+cd api && node test/load/orders-concurrency.mjs 600
+```
+
+Cria uma rifa de 2.000 números, dispara 600 pedidos simultâneos (um terço disputando os mesmos 60 números, mais cliques duplos) e confere no banco que nenhum número foi para dois pedidos e que os contadores batem.
+
 ### Banco
 
 ```bash

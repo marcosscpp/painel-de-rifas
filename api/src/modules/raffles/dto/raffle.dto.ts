@@ -122,3 +122,18 @@ export class ListRafflesQuery {
   @IsIn([10, 20, 50])
   pageSize = 20;
 }
+
+export class NumbersPageQuery {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  from = 0;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  size = 500;
+}

@@ -91,6 +91,24 @@ export class RafflesService {
     return items.sort((a, b) => order[a.status] - order[b.status]);
   }
 
+  // Página da grade: status de cada número como texto compacto (0 livre, 1 reservado, 2 pago).
+  // Varre a chave primária por faixa, então custa o mesmo com 1 mil ou 1 milhão de números.
+  async numbersPage(slug: string, from: number, size: number) {
+    const r = await this.prisma.raffle.findFirst({
+      where: { slug, status: { not: 'DRAFT' } },
+      select: { id: true, totalNumbers: true },
+    });
+    if (!r) throw new NotFoundException('Rifa não encontrada');
+    const start = Math.min(Math.max(0, from), r.totalNumbers);
+    const end = Math.min(start + size, r.totalNumbers);
+    const rows = await this.prisma.$queryRaw<Array<{ number: number; status: string }>>`
+      SELECT number, status::text AS status FROM raffle_numbers
+       WHERE "raffleId" = ${r.id}::uuid AND number >= ${start} AND number < ${end}
+       ORDER BY number`;
+    const code: Record<string, string> = { AVAILABLE: '0', RESERVED: '1', PAID: '2' };
+    return { from: start, size: end - start, total: r.totalNumbers, statuses: rows.map((x) => code[x.status]).join('') };
+  }
+
   // ─── Escrita ───────────────────────────────────────────────────────────────
 
   async create(dto: CreateRaffleDto) {

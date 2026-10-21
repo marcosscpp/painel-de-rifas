@@ -34,6 +34,12 @@ export class EnvVars {
   @IsString()
   DATABASE_URL: string;
 
+  @Transform(toInt)
+  @IsInt()
+  @Min(2)
+  @Max(200)
+  DB_POOL_SIZE = 20;
+
   @IsString()
   @MinLength(32, { message: 'JWT_SECRET precisa de pelo menos 32 caracteres' })
   JWT_SECRET: string;

@@ -16,6 +16,8 @@ export class PrismaService
     super({
       adapter: new PrismaPg({
         connectionString: config.getOrThrow<string>('DATABASE_URL'),
+        // Conexões simultâneas com o Postgres (padrão do pg é 10). Cada reserva usa uma durante a transação.
+        max: config.get<number>('DB_POOL_SIZE') ?? 20,
       }),
     });
   }

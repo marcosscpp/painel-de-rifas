@@ -34,7 +34,7 @@ Sem níveis intermediários (operador etc.). Login do comprador ainda **a defini
 1. Comprador escolhe a quantidade (ou os números) e informa telefone/nome.
 2. Front envia `POST /orders` com uma `idempotencyKey` gerada no clique. Repetir o envio devolve o mesmo pedido.
 3. Numa transação, a API reserva os números:
-   - **por quantidade:** `SELECT ... WHERE status='AVAILABLE' ORDER BY random() LIMIT n FOR UPDATE SKIP LOCKED`
+   - **por quantidade:** sorteia candidatos com `crypto.randomInt` e trava os livres pela chave primária (`number = ANY(candidatos) ... ORDER BY random() LIMIT n FOR UPDATE SKIP LOCKED`); perto de esgotar, completa varrendo os livres a partir de um ponto aleatório
    - **escolhendo:** `SELECT ... WHERE number = ANY($1) AND status='AVAILABLE' FOR UPDATE SKIP LOCKED`; se vier menos do que o pedido, falha e avisa quais já foram.
    - marca `RESERVED`, `orderId`, `reservedUntil = agora + 15 min`.
 4. API cria a cobrança Pix no gateway (via interface `PaymentProvider`) com valor `subtotal + R$ 1,99`.

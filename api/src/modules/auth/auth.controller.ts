@@ -16,7 +16,7 @@ export class AuthController {
     private readonly auth: AuthService,
     config: ConfigService,
   ) {
-    // Token só em cookie httpOnly: JavaScript da página nunca enxerga (protege contra XSS).
+    // Token httpOnly
     this.cookie = {
       httpOnly: true,
       secure: config.get('NODE_ENV') === 'production',
@@ -27,10 +27,13 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60_000 } }) // 5 tentativas por minuto por IP
+  @Throttle({ default: { limit: 6, ttl: 60_000 } }) // 6 tentativas por minuto por IP
   @Post('login')
   @HttpCode(200)
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const { token, user } = await this.auth.login(dto.email, dto.password);
     res.cookie(SESSION_COOKIE, token, this.cookie);
     return user;
@@ -46,7 +49,10 @@ export class AuthController {
 
   @Post('logout-all')
   @HttpCode(204)
-  async logoutAll(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response) {
+  async logoutAll(
+    @CurrentUser() user: AuthUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     await this.auth.logoutEverywhere(user.id);
     this.logout(res);
   }
