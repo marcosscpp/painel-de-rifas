@@ -1,6 +1,6 @@
 import { ClockCountdownIcon, PhoneIcon, QrCodeIcon, ReceiptIcon, TicketIcon, UserIcon } from '@phosphor-icons/react'
 import { Link, useParams } from 'react-router'
-import { Alert, Card, FullPageSpinner, PageHeader } from '@/shared/components'
+import { Alert, Card, CheckoutSkeleton, PageHeader } from '@/shared/components'
 import { useCountdown } from '@/shared/hooks/useCountdown'
 import { ApiError } from '@/shared/lib/http'
 import { formatCents } from '@/shared/utils/format'
@@ -12,7 +12,7 @@ export function CheckoutPage() {
   const { data: order, isLoading, error } = useOrder(orderId)
   const countdown = useCountdown(order?.status === 'PENDING' ? order.expiresAt : null)
 
-  if (isLoading) return <FullPageSpinner />
+  if (isLoading) return <CheckoutSkeleton />
   if (error || !order) {
     const notFound = error instanceof ApiError && (error.status === 404 || error.status === 400)
     return <Alert tone="error">{notFound ? 'Pedido não encontrado.' : 'Não foi possível carregar o pedido.'}</Alert>

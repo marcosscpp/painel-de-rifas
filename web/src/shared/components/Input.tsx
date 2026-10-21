@@ -38,8 +38,8 @@ export function Input({
         aria-invalid={!!error}
         className={cn(
           fieldControlBase,
-          leftIcon && 'pl-10',
-          rightAdornment && 'pr-10',
+          Boolean(leftIcon) && 'pl-10',
+          Boolean(rightAdornment) && 'pr-10',
           error ? 'border-error-500 focus:border-error-600 focus:ring-error-500/30' : 'border-cream-300',
           className,
         )}

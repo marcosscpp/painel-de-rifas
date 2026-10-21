@@ -1,55 +1,45 @@
-import type { ComponentType } from 'react'
-import {
-  LockKeyIcon,
-  NotePencilIcon,
-  PauseCircleIcon,
-  SparkleIcon,
-  TrophyIcon,
-  type IconProps,
-} from '@phosphor-icons/react'
+import type { ReactNode } from 'react'
+import { LockKeyIcon, NotePencilIcon, PauseCircleIcon, TrophyIcon } from '@phosphor-icons/react'
 import type { RaffleStatus } from '@/shared/types'
-import { cn } from '@/shared/utils/cn'
+import { Badge, type BadgeTone } from './Badge'
 
-const styles: Record<RaffleStatus, { label: string; className: string; icon: ComponentType<IconProps> }> = {
+const statusConfig: Record<
+  RaffleStatus,
+  { label: string; tone: BadgeTone; icon?: ReactNode; dot?: boolean; pulse?: boolean }
+> = {
   DRAFT: {
     label: 'Rascunho',
-    className: 'border border-cream-300 bg-cream-200/70 text-slate-grey-700',
-    icon: NotePencilIcon,
+    tone: 'neutral',
+    icon: <NotePencilIcon weight="bold" className="size-3.5 text-slate-grey-600" />,
   },
   ACTIVE: {
     label: 'À venda',
-    className: 'border border-watercourse-200 bg-watercourse-50 text-watercourse-800',
-    icon: SparkleIcon,
+    tone: 'teal',
+    dot: true,
+    pulse: true,
   },
   PAUSED: {
     label: 'Pausada',
-    className: 'border border-warning-300 bg-warning-50 text-warning-800',
-    icon: PauseCircleIcon,
+    tone: 'warning',
+    icon: <PauseCircleIcon weight="fill" className="size-3.5 text-warning-600" />,
   },
   CLOSED: {
     label: 'Vendas encerradas',
-    className: 'border border-slate-grey-200 bg-slate-grey-100 text-slate-grey-700',
-    icon: LockKeyIcon,
+    tone: 'error',
+    icon: <LockKeyIcon weight="fill" className="size-3.5 text-error-600" />,
   },
   DRAWN: {
     label: 'Sorteada',
-    className: 'border border-anzac-400/50 bg-charcoal-900 text-anzac-300',
-    icon: TrophyIcon,
+    tone: 'gold',
+    icon: <TrophyIcon weight="fill" className="size-3.5 text-charcoal-950" />,
   },
 }
 
-export function RaffleStatusBadge({ status }: { status: RaffleStatus }) {
-  const s = styles[status]
-  const Icon = s.icon
+export function RaffleStatusBadge({ status, className }: { status: RaffleStatus; className?: string }) {
+  const cfg = statusConfig[status]
   return (
-    <span
-      className={cn(
-        'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-        s.className,
-      )}
-    >
-      <Icon weight="fill" className="size-3.5" />
-      {s.label}
-    </span>
+    <Badge tone={cfg.tone} icon={cfg.icon} dot={cfg.dot} pulse={cfg.pulse} className={className}>
+      {cfg.label}
+    </Badge>
   )
 }

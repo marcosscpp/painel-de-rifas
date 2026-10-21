@@ -1,12 +1,16 @@
 import { useState } from 'react'
-import { CaretLeftIcon, CaretRightIcon, MagnifyingGlassIcon, PlusIcon, TicketIcon } from '@phosphor-icons/react'
+import { FunnelSimpleIcon, MagnifyingGlassIcon, PlusIcon, TicketIcon } from '@phosphor-icons/react'
 import { Link, useNavigate } from 'react-router'
 import {
   Alert,
   Button,
   Card,
+  type ColumnDef,
+  DataTable,
   EmptyState,
+  Input,
   PageHeader,
+  Pagination,
   ProgressBar,
   RaffleStatusBadge,
   Select,
@@ -16,6 +20,7 @@ import { useDebounce } from '@/shared/hooks/useDebounce'
 import type { RaffleStatus } from '@/shared/types'
 import { formatCents, formatInt } from '@/shared/utils/format'
 import { useAdminRaffleList } from '../hooks/useAdminRaffles'
+import type { AdminRaffleListItem } from '../types'
 
 const statusOptions = [
   { value: '', label: 'Todos os status' },
@@ -24,6 +29,49 @@ const statusOptions = [
   { value: 'PAUSED', label: 'Pausada' },
   { value: 'CLOSED', label: 'Vendas encerradas' },
   { value: 'DRAWN', label: 'Sorteada' },
+]
+
+const columns: ColumnDef<AdminRaffleListItem>[] = [
+  {
+    key: 'title',
+    header: 'Campanha',
+    cell: (r) => (
+      <Link
+        to={`/admin/rifas/${r.id}`}
+        className="flex items-center gap-3 font-bold text-charcoal-900 hover:text-watercourse-800"
+      >
+        {r.cover ? (
+          <img src={r.cover.thumb} alt="" className="h-11 w-16 shrink-0 rounded-lg object-cover" />
+        ) : (
+          <span className="royal-gradient flex h-11 w-16 shrink-0 items-center justify-center rounded-lg text-anzac-300">
+            <TicketIcon weight="duotone" className="size-5" />
+          </span>
+        )}
+        <span className="line-clamp-1">{r.title}</span>
+      </Link>
+    ),
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    cell: (r) => <RaffleStatusBadge status={r.status} />,
+  },
+  {
+    key: 'price',
+    header: 'Preço',
+    cell: (r) => <span className="font-semibold text-watercourse-800">{formatCents(r.priceCents)}</span>,
+  },
+  {
+    key: 'totalNumbers',
+    header: 'Cotas',
+    cell: (r) => <span className="font-mono text-xs text-slate-grey-700">{formatInt(r.totalNumbers)}</span>,
+  },
+  {
+    key: 'progress',
+    header: 'Progresso',
+    className: 'w-52',
+    cell: (r) => <ProgressBar percent={r.progress.percent} label={`${r.progress.percent}% vendido`} />,
+  },
 ]
 
 export function AdminRafflesPage() {
@@ -54,9 +102,10 @@ export function AdminRafflesPage() {
       />
 
       <Card className="mb-5 flex flex-wrap items-end gap-4 p-4">
-        <div className="w-full sm:w-56">
+        <div className="w-full sm:w-60">
           <Select
             label="Status"
+            leftIcon={<FunnelSimpleIcon weight="duotone" className="size-4" />}
             options={statusOptions}
             value={status}
             onChange={(e) => {
@@ -65,107 +114,45 @@ export function AdminRafflesPage() {
             }}
           />
         </div>
-        <div className="flex min-w-60 flex-1 flex-col gap-1.5">
-          <label htmlFor="busca" className="text-sm font-semibold text-charcoal-900">
-            Buscar campanha
-          </label>
-          <div className="relative">
-            <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-grey-500" />
-            <input
-              id="busca"
-              type="search"
-              placeholder="Título ou endereço (slug)"
-              className="w-full rounded-xl border border-cream-300 bg-cream-50 py-2.5 pr-3.5 pl-10 text-sm text-charcoal-900 outline-none transition placeholder:text-slate-grey-400 focus:border-watercourse-700 focus:bg-white focus:ring-2 focus:ring-anzac-400/45"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setPage(1)
-              }}
-            />
-          </div>
+        <div className="min-w-60 flex-1">
+          <Input
+            label="Buscar campanha"
+            type="search"
+            placeholder="Título ou endereço (slug)"
+            leftIcon={<MagnifyingGlassIcon className="size-4" />}
+            rightAdornment={isFetching && !isLoading ? <Spinner className="size-4 text-watercourse-700" /> : undefined}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(1)
+            }}
+          />
         </div>
-        {isFetching && !isLoading && <Spinner className="mb-2.5 text-watercourse-700" />}
       </Card>
 
       {error && <Alert tone="error">{error.message}</Alert>}
-      {isLoading && (
-        <div className="flex justify-center py-12">
-          <Spinner className="size-7 text-watercourse-700" />
-        </div>
-      )}
-      {data && data.items.length === 0 && (
-        <EmptyState
-          title="Nenhuma rifa encontrada"
-          description="Crie a primeira campanha clicando em “Nova rifa”."
-          action={
-            <Button variant="primary" onClick={() => navigate('/admin/rifas/nova')}>
-              <PlusIcon weight="bold" className="size-4" />
-              Criar primeira rifa
-            </Button>
-          }
-        />
-      )}
 
-      {data && data.items.length > 0 && (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-cream-200 bg-cream-100/90 text-xs font-bold tracking-wider text-slate-grey-600 uppercase">
-              <tr>
-                <th className="px-4 py-3.5">Campanha</th>
-                <th className="px-4 py-3.5">Status</th>
-                <th className="px-4 py-3.5">Preço</th>
-                <th className="px-4 py-3.5">Cotas</th>
-                <th className="w-52 px-4 py-3.5">Progresso</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-cream-200">
-              {data.items.map((r) => (
-                <tr key={r.id} className="transition-colors hover:bg-cream-100/60">
-                  <td className="px-4 py-3.5">
-                    <Link
-                      to={`/admin/rifas/${r.id}`}
-                      className="flex items-center gap-3 font-bold text-charcoal-900 hover:text-watercourse-800"
-                    >
-                      {r.cover ? (
-                        <img src={r.cover.thumb} alt="" className="h-11 w-16 shrink-0 rounded-lg object-cover" />
-                      ) : (
-                        <span className="royal-gradient flex h-11 w-16 shrink-0 items-center justify-center rounded-lg text-anzac-300">
-                          <TicketIcon weight="duotone" className="size-5" />
-                        </span>
-                      )}
-                      <span className="line-clamp-1">{r.title}</span>
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <RaffleStatusBadge status={r.status} />
-                  </td>
-                  <td className="px-4 py-3.5 font-semibold text-watercourse-800">{formatCents(r.priceCents)}</td>
-                  <td className="px-4 py-3.5 font-mono text-xs text-slate-grey-700">{formatInt(r.totalNumbers)}</td>
-                  <td className="px-4 py-3.5">
-                    <ProgressBar percent={r.progress.percent} label={`${r.progress.percent}% vendido`} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
+      <DataTable
+        columns={columns}
+        data={data?.items}
+        keyExtractor={(r) => r.id}
+        isLoading={isLoading}
+        skeletonRows={5}
+        emptyState={
+          <EmptyState
+            title="Nenhuma rifa encontrada"
+            description="Crie a primeira campanha clicando em “Nova rifa”."
+            action={
+              <Button variant="primary" onClick={() => navigate('/admin/rifas/nova')}>
+                <PlusIcon weight="bold" className="size-4" />
+                Criar primeira rifa
+              </Button>
+            }
+          />
+        }
+      />
 
-      {data && pages > 1 && (
-        <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-          <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            <CaretLeftIcon weight="bold" className="size-4" />
-            Anterior
-          </Button>
-          <span className="text-xs font-semibold text-slate-grey-600">
-            Página <strong className="text-charcoal-900">{page}</strong> de {pages}
-          </span>
-          <Button variant="secondary" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
-            Próxima
-            <CaretRightIcon weight="bold" className="size-4" />
-          </Button>
-        </div>
-      )}
+      {data && <Pagination page={page} pages={pages} onPageChange={setPage} />}
     </>
   )
 }

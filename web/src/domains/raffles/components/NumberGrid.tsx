@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CaretLeftIcon, CaretRightIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
-import { Button, Spinner } from '@/shared/components'
+import { Button, Input, Skeleton } from '@/shared/components'
 import { cn } from '@/shared/utils/cn'
 import { formatInt, padNumber } from '@/shared/utils/format'
 import { GRID_PAGE, useNumbersPage } from '../hooks/useRaffles'
@@ -69,20 +69,19 @@ export function NumberGrid({ slug, total, selected, max, onToggle }: Props) {
 
           <div className="flex items-center gap-2">
             <form
-              className="relative flex items-center"
               onSubmit={(e) => {
                 e.preventDefault()
                 if (jump) goTo(Number(jump))
               }}
             >
-              <MagnifyingGlassIcon className="pointer-events-none absolute left-2.5 size-4 text-slate-grey-500" />
-              <input
+              <Input
                 type="number"
                 min={0}
                 max={total - 1}
                 placeholder="Ir para nº"
                 aria-label="Ir para o número"
-                className="w-32 rounded-xl border border-cream-300 bg-white py-1.5 pr-3 pl-8 text-xs font-medium outline-none focus:border-watercourse-700"
+                leftIcon={<MagnifyingGlassIcon className="size-4" />}
+                className="w-36 bg-white py-1.5 text-xs"
                 value={jump}
                 onChange={(e) => setJump(e.target.value)}
               />
@@ -93,8 +92,10 @@ export function NumberGrid({ slug, total, selected, max, onToggle }: Props) {
       )}
 
       {isLoading || !page ? (
-        <div className="flex justify-center py-8">
-          <Spinner className="size-6 text-watercourse-700" />
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(3.4rem,1fr))] gap-1.5">
+          {Array.from({ length: 60 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 rounded-lg" />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(3.4rem,1fr))] gap-1.5">

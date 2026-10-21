@@ -9,7 +9,7 @@ import {
   TrophyIcon,
 } from '@phosphor-icons/react'
 import { Link, useParams } from 'react-router'
-import { Alert, Button, Card, FullPageSpinner, ProgressBar, RaffleStatusBadge } from '@/shared/components'
+import { Alert, Button, Card, ProgressBar, RaffleDetailSkeleton, RaffleStatusBadge } from '@/shared/components'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle'
 import { useSocketEvent } from '@/shared/hooks/useSocket'
 import { ApiError } from '@/shared/lib/http'
@@ -39,7 +39,7 @@ export function RafflePage() {
     setLost(taken)
   })
 
-  if (isLoading) return <FullPageSpinner />
+  if (isLoading) return <RaffleDetailSkeleton />
   if (error instanceof ApiError && error.status === 404) {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-center">
@@ -188,7 +188,7 @@ export function RafflePage() {
                   <ScalesIcon weight="duotone" className="size-5 text-watercourse-700" />
                   Regulamento e termos do sorteio
                 </span>
-                <span className="text-xs font-semibold text-watercourse-700 group-open:rotate-180 transition-transform">▼</span>
+                <span className="text-xs font-semibold text-watercourse-700 transition-transform group-open:rotate-180">▼</span>
               </summary>
               <p className="mt-4 border-t border-cream-200 pt-4 whitespace-pre-line text-sm leading-relaxed text-slate-grey-700">
                 {raffle.rules}

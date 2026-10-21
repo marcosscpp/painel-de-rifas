@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FloppyDiskIcon, PlusIcon, SparkleIcon, TrashIcon } from '@phosphor-icons/react'
-import { Alert, Button } from '@/shared/components'
+import { Alert, Button, Input } from '@/shared/components'
 import { formatCents } from '@/shared/utils/format'
 import { useRaffleMutation } from '../hooks/useAdminRaffles'
 import { adminRafflesApi } from '../services/admin-raffles.api'
@@ -34,13 +34,13 @@ export function PackagesEditor({ raffle }: { raffle: AdminRaffle }) {
           key={i}
           className="flex flex-wrap items-center gap-3 rounded-xl border border-cream-200 bg-cream-100/60 p-3"
         >
-          <input
+          <Input
             type="number"
             min={raffle.minPerOrder}
             max={raffle.maxPerOrder}
             aria-label="Quantidade do pacote"
             placeholder="Qtd."
-            className="w-28 rounded-xl border border-cream-300 bg-white px-3 py-2 font-mono text-sm font-bold text-charcoal-900 outline-none focus:border-watercourse-700"
+            className="w-28 bg-white py-2 font-mono font-bold"
             value={r.quantity}
             disabled={finished}
             onChange={(e) => update(i, { quantity: e.target.value })}
@@ -62,7 +62,7 @@ export function PackagesEditor({ raffle }: { raffle: AdminRaffle }) {
           <Button
             type="button"
             variant="ghost"
-            className="ml-auto text-alert hover:bg-alert-soft"
+            className="ml-auto text-error-600 hover:bg-error-50"
             disabled={finished}
             onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}
           >

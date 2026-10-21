@@ -1,4 +1,5 @@
 export { Alert } from './Alert'
+export { Badge, type BadgeProps, type BadgeTone } from './Badge'
 export { BrandMark } from './BrandMark'
 export { Button } from './Button'
 export { Card } from './Card'

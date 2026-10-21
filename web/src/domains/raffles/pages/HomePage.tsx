@@ -1,5 +1,5 @@
 import { CheckCircleIcon, LightningIcon, SparkleIcon, TicketIcon, TrophyIcon } from '@phosphor-icons/react'
-import { Alert, EmptyState, FullPageSpinner } from '@/shared/components'
+import { Alert, CardGridSkeleton, EmptyState } from '@/shared/components'
 import { RaffleCard } from '../components/RaffleCard'
 import { useRaffles } from '../hooks/useRaffles'
 
@@ -63,7 +63,7 @@ export function HomePage() {
           )}
         </div>
 
-        {isLoading && <FullPageSpinner />}
+        {isLoading && <CardGridSkeleton count={6} />}
         {error && <Alert tone="error">Não foi possível carregar as rifas. Tente de novo em instantes.</Alert>}
         {data && data.length === 0 && (
           <EmptyState

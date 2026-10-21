@@ -10,7 +10,7 @@ import {
 } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router'
 import { type BuyerDraft, type BuyerInput, BuyerForm, emptyBuyer, useCreateOrder } from '@/domains/checkout'
-import { Alert, Button, Card } from '@/shared/components'
+import { Alert, Button, Card, Input } from '@/shared/components'
 import { ApiError } from '@/shared/lib/http'
 import { cn } from '@/shared/utils/cn'
 import { formatCents, padNumber } from '@/shared/utils/format'
@@ -172,10 +172,10 @@ export function BuyBox({ raffle, mode, onModeChange, selected, onDeselect }: Pro
               >
                 <MinusIcon weight="bold" className="size-4" />
               </Button>
-              <input
+              <Input
                 type="number"
                 aria-label="Quantidade de números"
-                className="w-28 rounded-xl border border-cream-300 bg-white px-3 py-2 text-center font-mono text-lg font-bold text-charcoal-900 outline-none focus:border-watercourse-700 focus:ring-2 focus:ring-anzac-400/40"
+                className="w-28 bg-white px-3 py-2 text-center font-mono text-lg font-bold"
                 value={qty}
                 min={raffle.minPerOrder}
                 max={raffle.maxPerOrder}

@@ -46,7 +46,7 @@ export function Select({
         className={cn(
           fieldControlBase,
           'cursor-pointer appearance-none bg-cream-50 pr-10',
-          leftIcon && 'pl-10',
+          Boolean(leftIcon) && 'pl-10',
           error ? 'border-error-500 focus:border-error-600 focus:ring-error-500/30' : 'border-cream-300',
           className,
         )}
