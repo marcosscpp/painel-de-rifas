@@ -13,6 +13,17 @@ export class ApiError extends Error {
 
 type Options = Omit<RequestInit, 'body'> & { body?: unknown }
 
+async function parse<T>(res: Response): Promise<T> {
+  if (res.status === 204) return undefined as T
+
+  const data: unknown = await res.json().catch(() => null)
+  if (!res.ok) {
+    const msg = (data as { message?: string | string[] } | null)?.message
+    throw new ApiError(res.status, Array.isArray(msg) ? msg.join('\n') : (msg ?? res.statusText), data)
+  }
+  return data as T
+}
+
 // Cliente HTTP único. A sessão vai no cookie httpOnly (o JS não vê o token),
 // por isso só precisamos mandar credenciais da mesma origem.
 export async function http<T>(path: string, { body, headers, ...init }: Options = {}): Promise<T> {
@@ -26,13 +37,18 @@ export async function http<T>(path: string, { body, headers, ...init }: Options 
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
+  return parse<T>(res)
+}
 
-  if (res.status === 204) return undefined as T
-
-  const data: unknown = await res.json().catch(() => null)
-  if (!res.ok) {
-    const msg = (data as { message?: string | string[] } | null)?.message
-    throw new ApiError(res.status, Array.isArray(msg) ? msg.join(', ') : (msg ?? res.statusText), data)
-  }
-  return data as T
+// Envio de arquivo (multipart). O navegador define o Content-Type com o boundary.
+export async function upload<T>(path: string, file: File, field = 'file'): Promise<T> {
+  const form = new FormData()
+  form.append(field, file)
+  const res = await fetch(`${env.apiBase}${path}`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+    body: form,
+  })
+  return parse<T>(res)
 }
