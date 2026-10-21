@@ -1,0 +1,23 @@
+{$DOMAIN} {
+	encode zstd gzip
+
+	# API e WebSocket vão para o Nest; o resto é o front estático.
+	handle /api/* {
+		reverse_proxy api:3000 {
+			health_uri /api/health
+			lb_try_duration 10s
+		}
+	}
+	handle /socket.io/* {
+		reverse_proxy api:3000
+	}
+	handle {
+		reverse_proxy web:80
+	}
+}
+
+img.{$DOMAIN} {
+	encode zstd gzip
+	header Cache-Control "public, max-age=31536000, immutable"
+	reverse_proxy minio:9000
+}

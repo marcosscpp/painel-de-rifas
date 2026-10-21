@@ -1,0 +1,248 @@
+// Modelo do escopo A (ver docs/MODELO.md). Valores em centavos (Int).
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Usuários ────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  BUYER
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  role         Role     @default(BUYER)
+  name         String
+  phone        String   @unique
+  cpf          String?  @unique
+  email        String?  @unique
+  passwordHash String?  // só admin usa senha
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders Order[]
+
+  @@map("users")
+}
+
+// ─── Rifas ───────────────────────────────────────────────────────────────────
+
+enum RaffleStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  CLOSED // vendas encerradas, aguardando sorteio
+  DRAWN // resultado publicado
+}
+
+enum SaleMode {
+  QUANTITY // escolhe a quantidade, números aleatórios
+  PICK // escolhe os números na grade
+  BOTH
+}
+
+model Raffle {
+  id           String       @id @default(uuid()) @db.Uuid
+  slug         String       @unique
+  title        String
+  description  String
+  rules        String       @default("")
+  status       RaffleStatus @default(DRAFT)
+  saleMode     SaleMode     @default(BOTH)
+  totalNumbers Int
+  priceCents   Int
+  minPerOrder  Int          @default(1)
+  maxPerOrder  Int          @default(1000)
+  startsAt     DateTime?
+  endsAt       DateTime?
+  drawDate     DateTime?
+  coverKey     String? // chave da capa no MinIO
+
+  // Resultado (Loteria Federal)
+  lotteryContest String? // número do concurso
+  lotteryResult  String? // número sorteado pela Loteria
+  winningNumber  Int? // número da rifa após a regra de conversão
+  drawnAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  packages RafflePackage[]
+  prizes   Prize[]
+  numbers  RaffleNumber[]
+  orders   Order[]
+
+  @@index([status])
+  @@map("raffles")
+}
+
+model RafflePackage {
+  id          String  @id @default(uuid()) @db.Uuid
+  raffleId    String  @db.Uuid
+  quantity    Int
+  highlighted Boolean @default(false)
+  position    Int     @default(0)
+
+  raffle Raffle @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+
+  @@unique([raffleId, quantity])
+  @@map("raffle_packages")
+}
+
+enum PrizeKind {
+  MONEY
+  ITEM
+}
+
+model Prize {
+  id          String    @id @default(uuid()) @db.Uuid
+  raffleId    String    @db.Uuid
+  position    Int       @default(1) // 1º prêmio, 2º prêmio...
+  title       String
+  description String    @default("")
+  kind        PrizeKind @default(ITEM)
+  valueCents  Int?
+
+  raffle Raffle       @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  images PrizeImage[]
+
+  @@map("prizes")
+}
+
+model PrizeImage {
+  id       String @id @default(uuid()) @db.Uuid
+  prizeId  String @db.Uuid
+  key      String // ex.: rifas/<id>/premios/<id>/foto-1200.webp
+  position Int    @default(0)
+
+  prize Prize @relation(fields: [prizeId], references: [id], onDelete: Cascade)
+
+  @@map("prize_images")
+}
+
+// ─── Números ─────────────────────────────────────────────────────────────────
+// Uma linha por número, pré-gerada ao publicar a rifa. A reserva usa
+// SELECT ... FOR UPDATE SKIP LOCKED (SQL cru), nos dois modos de venda.
+
+enum NumberStatus {
+  AVAILABLE
+  RESERVED
+  PAID
+}
+
+model RaffleNumber {
+  raffleId      String       @db.Uuid
+  number        Int
+  status        NumberStatus @default(AVAILABLE)
+  orderId       String?      @db.Uuid
+  reservedUntil DateTime?
+
+  raffle Raffle @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  order  Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@id([raffleId, number])
+  @@index([raffleId, status])
+  @@index([orderId])
+  @@index([status, reservedUntil])
+  @@map("raffle_numbers")
+}
+
+// ─── Pedidos e pagamentos ────────────────────────────────────────────────────
+
+enum OrderStatus {
+  PENDING // aguardando Pix, números reservados
+  PAID
+  EXPIRED // passou dos 15 min, números liberados
+  CANCELED
+}
+
+model Order {
+  id             String      @id @default(uuid()) @db.Uuid
+  raffleId       String      @db.Uuid
+  userId         String      @db.Uuid
+  quantity       Int
+  subtotalCents  Int // quantidade x preço
+  feeCents       Int // taxa Pix repassada (R$ 1,99 por pedido)
+  totalCents     Int
+  status         OrderStatus @default(PENDING)
+  idempotencyKey String      @unique // enviada pelo front, evita pedido duplicado
+  expiresAt      DateTime
+  paidAt         DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  raffle  Raffle         @relation(fields: [raffleId], references: [id])
+  user    User           @relation(fields: [userId], references: [id])
+  numbers RaffleNumber[]
+  payment Payment?
+
+  @@index([raffleId, status])
+  @@index([userId])
+  @@index([status, expiresAt])
+  @@map("orders")
+}
+
+enum PaymentProvider {
+  ASAAS
+  IUGU
+  FAKE // desenvolvimento
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  EXPIRED
+  REFUNDED
+}
+
+model Payment {
+  id               String          @id @default(uuid()) @db.Uuid
+  orderId          String          @unique @db.Uuid
+  provider         PaymentProvider
+  providerChargeId String
+  amountCents      Int
+  status           PaymentStatus   @default(PENDING)
+  pixQrCodeBase64  String?
+  pixCopyPaste     String?
+  confirmedAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@unique([provider, providerChargeId])
+  @@map("payments")
+}
+
+// Cada webhook recebido é gravado uma vez; repetido = ignorado (idempotência).
+model WebhookEvent {
+  id          String          @id @default(uuid()) @db.Uuid
+  provider    PaymentProvider
+  eventId     String
+  type        String
+  payload     Json
+  processedAt DateTime?
+  receivedAt  DateTime        @default(now())
+
+  @@unique([provider, eventId])
+  @@map("webhook_events")
+}
+
+// ─── Configurações ───────────────────────────────────────────────────────────
+// Chave/valor editável pelo admin: taxa Pix, minutos de reserva, logo, cores...
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
