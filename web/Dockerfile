@@ -3,7 +3,11 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# O npm às vezes pula o binário nativo do Rolldown (Vite 8) no Alpine (npm/cli#4828), mesmo estando
+# no lockfile. Se faltar, instala a mesma versão que o Rolldown pede.
+RUN npm ci \
+ && (node -e "require('@rolldown/binding-linux-x64-musl')" 2>/dev/null \
+  || npm i --no-save "@rolldown/binding-linux-x64-musl@$(node -p "require('./node_modules/rolldown/package.json').version")")
 
 # ── dev: Vite com hot reload ──
 FROM deps AS dev
