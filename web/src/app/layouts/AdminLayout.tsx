@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   ArrowSquareOutIcon,
+  ChartBarIcon,
   GearSixIcon,
   ListIcon,
   ReceiptIcon,
@@ -23,6 +24,7 @@ const nav = [
   { to: '/admin/pedidos', label: 'Pedidos', icon: ReceiptIcon },
   { to: '/admin/compradores', label: 'Compradores', icon: UsersIcon },
   { to: '/admin/sorteios', label: 'Sorteios', icon: TrophyIcon },
+  { to: '/admin/relatorios', label: 'Relatórios', icon: ChartBarIcon },
   { to: '/admin/configuracoes', label: 'Configurações', icon: GearSixIcon },
 ]
 

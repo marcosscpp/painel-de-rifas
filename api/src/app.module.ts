@@ -19,6 +19,7 @@ import { PaymentsModule } from './modules/payments/payments.module.js';
 import { PrizesModule } from './modules/prizes/prizes.module.js';
 import { RafflesModule } from './modules/raffles/raffles.module.js';
 import { RealtimeModule } from './modules/realtime/realtime.module.js';
+import { ReportsModule } from './modules/reports/reports.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
 import { UploadsModule } from './modules/uploads/uploads.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -45,6 +46,7 @@ import { UsersModule } from './modules/users/users.module.js';
     DrawsModule,
     SettingsModule,
     UploadsModule,
+    ReportsModule,
   ],
   providers: [
     // Ordem importa: rate limit → autenticação → papel. Os três valem só para HTTP.

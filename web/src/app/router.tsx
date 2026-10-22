@@ -24,6 +24,7 @@ const AdminRaffleFormPage = page(() => import('@/domains/admin-raffles'), 'Admin
 const AdminOrdersPage = page(() => import('@/domains/admin-orders'), 'AdminOrdersPage')
 const AdminBuyersPage = page(() => import('@/domains/admin-buyers'), 'AdminBuyersPage')
 const AdminDrawsPage = page(() => import('@/domains/admin-draws'), 'AdminDrawsPage')
+const AdminReportsPage = page(() => import('@/domains/admin-reports'), 'AdminReportsPage')
 const AdminSettingsPage = page(() => import('@/domains/admin-settings'), 'AdminSettingsPage')
 const NotFoundPage = page(() => import('./NotFoundPage'), 'NotFoundPage')
 
@@ -52,6 +53,7 @@ export function AppRouter() {
             <Route path="pedidos" element={<AdminOrdersPage />} />
             <Route path="compradores" element={<AdminBuyersPage />} />
             <Route path="sorteios" element={<AdminDrawsPage />} />
+            <Route path="relatorios" element={<AdminReportsPage />} />
             <Route path="configuracoes" element={<AdminSettingsPage />} />
           </Route>
         </Route>
