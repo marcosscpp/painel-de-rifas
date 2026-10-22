@@ -25,7 +25,12 @@ export function useCreateOrder() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ordersApi.create,
-    onSuccess: (order) => qc.setQueryData(orderKey(order.id), order),
+    onSuccess: (order) => {
+      qc.setQueryData(orderKey(order.id), order)
+      // A compra com cadastro passa a lembrar do comprador; "Meus números" muda.
+      void qc.invalidateQueries({ queryKey: ['buyer-session'] })
+      void qc.invalidateQueries({ queryKey: ['buyer-orders'] })
+    },
   })
 }
 

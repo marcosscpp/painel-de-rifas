@@ -1,8 +1,16 @@
-import type { FormEvent } from 'react'
-import { ArrowLeftIcon, LightningIcon } from '@phosphor-icons/react'
-import { Button, Input } from '@/shared/components'
-import { maskCpfInput, maskPhoneInput } from '@/shared/utils/format'
+import { type FormEvent, useState } from 'react'
+import { ArrowLeftIcon, LightningIcon, MapPinIcon, UserCircleIcon } from '@phosphor-icons/react'
+import { Button, Input, Select } from '@/shared/components'
+import {
+  dateInputToIso,
+  maskCpfInput,
+  maskDateInput,
+  maskPhoneInput,
+  maskZipInput,
+} from '@/shared/utils/format'
+import { UFS } from '../constants'
 import { useCheckoutSettings } from '../hooks/useOrder'
+import { buyerApi } from '../services/buyer.api'
 import type { BuyerDraft, BuyerInput } from '../types'
 
 type Props = {
@@ -12,56 +20,219 @@ type Props = {
   submitting: boolean
   onSubmit: (buyer: BuyerInput) => void
   onCancel: () => void
+  onHaveAccount: () => void
 }
 
-// Dados do comprador. Sem senha: o telefone identifica as compras (consulta em "Meus números").
-// Controlado por fora para não perder o que foi digitado se o comprador voltar e trocar os números.
-export function BuyerForm({ value, onChange, submitLabel, submitting, onSubmit, onCancel }: Props) {
+const digits = (v: string) => v.replace(/\D/g, '')
+
+// Cadastro do comprador, com os mesmos campos do Wesley Alemão. Sem senha: celular + CPF
+// identificam a pessoa. Controlado por fora para não perder o que foi digitado se ela fechar o modal.
+export function BuyerForm({ value, onChange, submitLabel, submitting, onSubmit, onCancel, onHaveAccount }: Props) {
   const set = (patch: Partial<BuyerDraft>) => onChange({ ...value, ...patch })
-  // O gateway real (Asaas) exige CPF para gerar o Pix; o de teste não.
-  const cpfRequired = useCheckoutSettings().data?.cpfRequired ?? false
-  const cpfDigits = value.cpf.replace(/\D/g, '')
-  const cpfError = cpfDigits.length > 0 && cpfDigits.length < 11 ? 'CPF incompleto' : undefined
-  const phoneDigits = value.phone.replace(/\D/g, '')
-  const phoneError = phoneDigits.length > 0 && phoneDigits.length < 10 ? 'Telefone incompleto' : undefined
+  const setAddr = (patch: Partial<BuyerDraft['address']>) => set({ address: { ...value.address, ...patch } })
+  const minAge = useCheckoutSettings().data?.minBuyerAge ?? 18
+  const [cepState, setCepState] = useState<'idle' | 'loading' | 'error'>('idle')
+
+  // Erros só depois de digitar o suficiente, para não brigar com quem ainda está preenchendo.
+  const phone = digits(value.phone)
+  const phoneConfirm = digits(value.phoneConfirm)
+  const phoneError = phone.length > 0 && phone.length < 10 ? 'Celular incompleto' : undefined
+  const confirmError =
+    phoneConfirm.length >= 10 && phoneConfirm !== phone ? 'Os dois celulares não são iguais' : undefined
+  const cpfError = digits(value.cpf).length > 0 && digits(value.cpf).length < 11 ? 'CPF incompleto' : undefined
+  const birthIso = dateInputToIso(value.birthDate)
+  const birthError = value.birthDate.length === 10 && !birthIso ? 'Data inválida' : undefined
+  const nameError =
+    value.name.trim().length > 3 && value.name.trim().split(/\s+/).length < 2 ? 'Informe nome e sobrenome' : undefined
+
+  const lookupCep = async (masked: string) => {
+    setAddr({ zipCode: masked })
+    const cep = digits(masked)
+    if (cep.length !== 8) return
+    setCepState('loading')
+    try {
+      const a = await buyerApi.cep(cep)
+      onChange({
+        ...value,
+        address: { ...value.address, zipCode: masked, street: a.street, district: a.district, city: a.city, state: a.state },
+      })
+      setCepState('idle')
+    } catch {
+      setCepState('error')
+    }
+  }
+
+  const blocked = !!(phoneError || confirmError || cpfError || birthError || nameError)
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    const cpf = value.cpf.replace(/\D/g, '')
-    onSubmit({ name: value.name, phone: phoneDigits, ...(cpf && { cpf }) })
+    if (blocked || !birthIso) return
+    const a = value.address
+    onSubmit({
+      name: value.name.trim(),
+      ...(value.showSocialName && value.socialName.trim() && { socialName: value.socialName.trim() }),
+      phone,
+      phoneConfirm,
+      cpf: digits(value.cpf),
+      birthDate: birthIso,
+      email: value.email.trim(),
+      ...(value.wantsAddress && {
+        address: {
+          zipCode: digits(a.zipCode),
+          street: a.street,
+          number: a.number,
+          district: a.district,
+          city: a.city,
+          state: a.state,
+          ...(a.complement && { complement: a.complement }),
+          ...(a.reference && { reference: a.reference }),
+        },
+      }),
+    })
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3.5 border-t border-cream-200 pt-3">
+    <form onSubmit={submit} className="flex flex-col gap-3.5">
+      <div>
+        <Input
+          label="Nome completo"
+          required
+          maxLength={80}
+          autoComplete="name"
+          placeholder="Informe seu nome e sobrenome"
+          value={value.name}
+          error={nameError}
+          onChange={(e) => set({ name: e.target.value })}
+        />
+        {!value.showSocialName && (
+          <button
+            type="button"
+            onClick={() => set({ showSocialName: true })}
+            className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-slate-grey-600 hover:text-watercourse-800"
+          >
+            <UserCircleIcon weight="duotone" className="size-3.5" />
+            Informar o nome social
+          </button>
+        )}
+      </div>
+      {value.showSocialName && (
+        <Input
+          label="Nome social (opcional)"
+          maxLength={80}
+          placeholder="Como você prefere ser chamado"
+          value={value.socialName}
+          onChange={(e) => set({ socialName: e.target.value })}
+        />
+      )}
+
       <Input
-        label="Nome completo"
+        label="E-mail"
+        type="email"
         required
-        minLength={3}
-        maxLength={80}
-        autoComplete="name"
-        placeholder="Seu nome e sobrenome"
-        value={value.name}
-        onChange={(e) => set({ name: e.target.value })}
+        autoComplete="email"
+        placeholder="voce@exemplo.com"
+        value={value.email}
+        onChange={(e) => set({ email: e.target.value })}
       />
-      <Input
-        label="WhatsApp / celular"
-        required
-        inputMode="tel"
-        autoComplete="tel-national"
-        placeholder="(11) 98765-4321"
-        value={value.phone}
-        error={phoneError}
-        onChange={(e) => set({ phone: maskPhoneInput(e.target.value) })}
-      />
-      <Input
-        label={cpfRequired ? 'CPF' : 'CPF (opcional)'}
-        required={cpfRequired}
-        error={cpfError}
-        inputMode="numeric"
-        placeholder="000.000.000-00"
-        value={value.cpf}
-        onChange={(e) => set({ cpf: maskCpfInput(e.target.value) })}
-      />
+
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label="Celular"
+          required
+          inputMode="tel"
+          autoComplete="tel-national"
+          placeholder="(11) 98765-4321"
+          value={value.phone}
+          error={phoneError}
+          onChange={(e) => set({ phone: maskPhoneInput(e.target.value) })}
+        />
+        <Input
+          label="Confirme o celular"
+          required
+          inputMode="tel"
+          autoComplete="off"
+          onPaste={(e) => e.preventDefault()} // obriga a digitar de novo: é a conferência
+          value={value.phoneConfirm}
+          error={confirmError}
+          onChange={(e) => set({ phoneConfirm: maskPhoneInput(e.target.value) })}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label="Data de nascimento"
+          required
+          inputMode="numeric"
+          autoComplete="bday"
+          placeholder="dd/mm/aaaa"
+          value={value.birthDate}
+          error={birthError}
+          hint={`Maiores de ${minAge} anos`}
+          onChange={(e) => set({ birthDate: maskDateInput(e.target.value) })}
+        />
+        <Input
+          label="CPF"
+          required
+          inputMode="numeric"
+          placeholder="000.000.000-00"
+          value={value.cpf}
+          error={cpfError}
+          onChange={(e) => set({ cpf: maskCpfInput(e.target.value) })}
+        />
+      </div>
+
+      <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-charcoal-900">
+        <input
+          type="checkbox"
+          checked={value.wantsAddress}
+          onChange={(e) => set({ wantsAddress: e.target.checked })}
+          className="size-4 accent-watercourse-800"
+        />
+        <MapPinIcon weight="duotone" className="size-4 text-watercourse-700" />
+        Desejo informar o meu endereço
+      </label>
+
+      {value.wantsAddress && (
+        <div className="flex flex-col gap-3 rounded-xl border border-cream-200 bg-cream-100/50 p-3">
+          <Input
+            label="CEP"
+            required
+            inputMode="numeric"
+            placeholder="00000-000"
+            value={value.address.zipCode}
+            hint={cepState === 'loading' ? 'Buscando endereço…' : undefined}
+            error={cepState === 'error' ? 'CEP não encontrado. Preencha à mão.' : undefined}
+            onChange={(e) => void lookupCep(maskZipInput(e.target.value))}
+          />
+          <div className="grid grid-cols-[1fr_6rem] gap-3">
+            <Input label="Rua ou avenida" required value={value.address.street} onChange={(e) => setAddr({ street: e.target.value })} />
+            <Input label="Número" required placeholder="123 ou S/N" value={value.address.number} onChange={(e) => setAddr({ number: e.target.value })} />
+          </div>
+          <Input label="Bairro" required value={value.address.district} onChange={(e) => setAddr({ district: e.target.value })} />
+          <div className="grid grid-cols-[1fr_6rem] gap-3">
+            <Input label="Cidade" required value={value.address.city} onChange={(e) => setAddr({ city: e.target.value })} />
+            <Select
+              label="UF"
+              required
+              value={value.address.state}
+              onChange={(e) => setAddr({ state: e.target.value })}
+              options={[{ value: '', label: '--' }, ...UFS.map((uf) => ({ value: uf, label: uf }))]}
+            />
+          </div>
+          <Input
+            label="Complemento (opcional)"
+            placeholder="Apartamento, bloco, casa…"
+            value={value.address.complement}
+            onChange={(e) => setAddr({ complement: e.target.value })}
+          />
+          <Input
+            label="Ponto de referência (opcional)"
+            value={value.address.reference}
+            onChange={(e) => setAddr({ reference: e.target.value })}
+          />
+        </div>
+      )}
+
       <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-cream-200 bg-cream-100/70 p-3 text-xs text-slate-grey-700">
         <input
           type="checkbox"
@@ -70,13 +241,16 @@ export function BuyerForm({ value, onChange, submitLabel, submitting, onSubmit, 
           onChange={(e) => set({ accepted: e.target.checked })}
           className="mt-0.5 size-4 accent-watercourse-800"
         />
-        <span>Declaro que tenho 18 anos ou mais e concordo com o regulamento da campanha.</span>
+        <span>Ao concluir, declaro ter {minAge} anos ou mais e que li e concordo com o regulamento da campanha.</span>
       </label>
-      <Button type="submit" variant="buy" loading={submitting} disabled={!!phoneError || !!cpfError} className="py-3.5 text-base">
+      <Button type="submit" variant="buy" loading={submitting} disabled={blocked} className="py-3.5 text-base">
         <LightningIcon weight="fill" className="size-4.5" />
         {submitLabel}
       </Button>
-      <Button type="button" variant="ghost" onClick={onCancel}>
+      <Button type="button" variant="ghost" onClick={onHaveAccount}>
+        Já comprei antes
+      </Button>
+      <Button type="button" variant="ghost" onClick={onCancel} className="text-xs">
         <ArrowLeftIcon weight="bold" className="size-4" />
         Voltar para as cotas
       </Button>

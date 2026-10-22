@@ -43,14 +43,20 @@ const ORDER_ROW = {
 const dto = (over: Partial<CreateOrderDto> = {}): CreateOrderDto => ({
   raffleSlug: 'onix',
   quantity: 2,
-  buyer: { name: 'Maria da Silva', phone: '11987654321' },
+  buyer: {
+    name: 'Maria da Silva',
+    phone: '11987654321',
+    phoneConfirm: '11987654321',
+    cpf: '52998224725',
+    birthDate: '1990-05-10',
+    email: 'maria@x.com',
+  },
   idempotencyKey: '7f1c3a2e-0000-4000-8000-000000000001',
   ...over,
 });
 
 describe('OrdersService', () => {
   let prisma: PrismaMock;
-  let users: { upsertBuyer: ReturnType<typeof vi.fn> };
   let realtime: { numbersChanged: ReturnType<typeof vi.fn>; progressChanged: ReturnType<typeof vi.fn>; orderStatus: ReturnType<typeof vi.fn> };
   let uploads: { urls: ReturnType<typeof vi.fn> };
   let gateway: { name: string; requiresCpf: boolean; createCharge: ReturnType<typeof vi.fn>; cancelCharge: ReturnType<typeof vi.fn> };
@@ -58,13 +64,11 @@ describe('OrdersService', () => {
 
   beforeEach(() => {
     prisma = makePrisma();
-    users = { upsertBuyer: vi.fn().mockResolvedValue({ id: 'u1' }) };
     realtime = { numbersChanged: vi.fn(), progressChanged: vi.fn(), orderStatus: vi.fn() };
     uploads = { urls: vi.fn().mockReturnValue(null) };
     gateway = { name: 'FAKE', requiresCpf: false, createCharge: vi.fn(), cancelCharge: vi.fn().mockResolvedValue(undefined) };
     service = new OrdersService(
       prisma as never,
-      users as never,
       realtime as never,
       new RafflesPresenter(uploads as never),
       uploads as never,
@@ -84,56 +88,55 @@ describe('OrdersService', () => {
   describe('create: validações antes de reservar', () => {
     it('reenvio com a mesma chave devolve o pedido existente sem criar outro', async () => {
       prisma.order.findUnique.mockResolvedValueOnce({ id: 'o1' }).mockResolvedValueOnce(ORDER_ROW);
-      const out = await service.create(dto());
+      const out = await service.create(dto(), 'u1');
       expect(out.id).toBe('o1');
       expect(prisma.$transaction).not.toHaveBeenCalled();
-      expect(users.upsertBuyer).not.toHaveBeenCalled();
     });
 
     it('exige quantidade OU números, não os dois nem nenhum', async () => {
-      await expect(service.create(dto({ numbers: [1] }))).rejects.toBeInstanceOf(BadRequestException);
-      await expect(service.create(dto({ quantity: undefined }))).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.create(dto({ numbers: [1] }), 'u1')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.create(dto({ quantity: undefined }), 'u1')).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('rifa inexistente ou em rascunho é 404', async () => {
       prisma.raffle.findUnique.mockResolvedValueOnce(null);
-      await expect(service.create(dto())).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.create(dto(), 'u1')).rejects.toBeInstanceOf(NotFoundException);
       prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, status: 'DRAFT' });
-      await expect(service.create(dto())).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.create(dto(), 'u1')).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it.each(['PAUSED', 'CLOSED', 'DRAWN'])('rifa %s não vende', async (status) => {
       prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, status });
-      await expect(service.create(dto())).rejects.toBeInstanceOf(ConflictException);
+      await expect(service.create(dto(), 'u1')).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('não vende depois do fim das vendas', async () => {
       prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, endsAt: new Date(Date.now() - 1000) });
-      await expect(service.create(dto())).rejects.toThrow('terminaram');
+      await expect(service.create(dto(), 'u1')).rejects.toThrow('terminaram');
     });
 
     it('respeita o modo de venda da rifa', async () => {
       prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, saleMode: 'QUANTITY' });
-      await expect(service.create(dto({ quantity: undefined, numbers: [1] }))).rejects.toThrow('não permite escolher');
+      await expect(service.create(dto({ quantity: undefined, numbers: [1] }), 'u1')).rejects.toThrow('não permite escolher');
       prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, saleMode: 'PICK' });
-      await expect(service.create(dto())).rejects.toThrow('escolhe os números');
+      await expect(service.create(dto(), 'u1')).rejects.toThrow('escolhe os números');
     });
 
     it('respeita mínimo e máximo por pedido', async () => {
-      await expect(service.create(dto({ quantity: 51 }))).rejects.toThrow('Escolha de 1 a 50');
+      await expect(service.create(dto({ quantity: 51 }), 'u1')).rejects.toThrow('Escolha de 1 a 50');
       prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, minPerOrder: 5 });
-      await expect(service.create(dto({ quantity: 2 }))).rejects.toThrow('Escolha de 5 a 50');
+      await expect(service.create(dto({ quantity: 2 }), 'u1')).rejects.toThrow('Escolha de 5 a 50');
     });
 
     it('recusa número que não existe na rifa', async () => {
       prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, saleMode: 'PICK' });
-      await expect(service.create(dto({ quantity: undefined, numbers: [3, 1000] }))).rejects.toThrow(
+      await expect(service.create(dto({ quantity: undefined, numbers: [3, 1000] }), 'u1')).rejects.toThrow(
         'Números inexistentes: 1000',
       );
     });
 
     it('nada é reservado se a validação falhar', async () => {
-      await expect(service.create(dto({ quantity: 999 }))).rejects.toThrow();
+      await expect(service.create(dto({ quantity: 999 }), 'u1')).rejects.toThrow();
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
@@ -143,7 +146,7 @@ describe('OrdersService', () => {
       vi.useFakeTimers({ now: new Date('2026-10-21T12:00:00Z') });
       prisma.$queryRaw.mockResolvedValueOnce([{ number: 7 }, { number: 42 }]);
 
-      const out = await service.create(dto());
+      const out = await service.create(dto(), 'u1');
 
       expect(prisma.order.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -176,7 +179,7 @@ describe('OrdersService', () => {
       prisma.$queryRaw
         .mockResolvedValueOnce([{ number: 7 }]) // candidatos
         .mockResolvedValueOnce([{ number: 900 }]); // varredura >= início
-      await service.create(dto());
+      await service.create(dto(), 'u1');
       expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
       expect(realtime.numbersChanged).toHaveBeenCalledWith('onix', 'RESERVED', [7, 900]);
     });
@@ -184,26 +187,26 @@ describe('OrdersService', () => {
     it('por quantidade: avisa quantos restam quando não há números suficientes', async () => {
       prisma.$queryRaw.mockResolvedValue([]);
       prisma.$queryRaw.mockResolvedValueOnce([{ number: 3 }]);
-      await expect(service.create(dto())).rejects.toThrow('Só restam 1 números');
+      await expect(service.create(dto(), 'u1')).rejects.toThrow('Só restam 1 números');
       expect(realtime.numbersChanged).not.toHaveBeenCalled();
     });
 
     it('por quantidade: esgotado', async () => {
       prisma.$queryRaw.mockResolvedValue([]);
-      await expect(service.create(dto())).rejects.toThrow('Números esgotados');
+      await expect(service.create(dto(), 'u1')).rejects.toThrow('Números esgotados');
     });
 
     it('escolhendo: reserva exatamente os números pedidos', async () => {
       prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, saleMode: 'PICK' });
       prisma.$queryRaw.mockResolvedValueOnce([{ number: 3 }, { number: 9 }]);
-      await service.create(dto({ quantity: undefined, numbers: [3, 9] }));
+      await service.create(dto({ quantity: undefined, numbers: [3, 9] }), 'u1');
       expect(realtime.numbersChanged).toHaveBeenCalledWith('onix', 'RESERVED', [3, 9]);
     });
 
     it('escolhendo: se algum foi pego por outra pessoa, desfaz e diz quais', async () => {
       prisma.raffle.findUnique.mockResolvedValueOnce({ ...RAFFLE, saleMode: 'PICK' });
       prisma.$queryRaw.mockResolvedValueOnce([{ number: 3 }]);
-      const err = await service.create(dto({ quantity: undefined, numbers: [3, 9, 12] })).catch((e: unknown) => e);
+      const err = await service.create(dto({ quantity: undefined, numbers: [3, 9, 12] }), 'u1').catch((e: unknown) => e);
       expect(err).toBeInstanceOf(NumbersUnavailableException);
       expect((err as NumbersUnavailableException).getResponse()).toMatchObject({ unavailable: [9, 12] });
       // nada foi marcado como reservado
@@ -213,7 +216,7 @@ describe('OrdersService', () => {
     it('rifa pausada no meio da compra: o contador não atualiza e tudo é desfeito', async () => {
       prisma.$queryRaw.mockResolvedValueOnce([{ number: 7 }, { number: 42 }]);
       prisma.$executeRaw.mockResolvedValueOnce(2).mockResolvedValueOnce(0);
-      await expect(service.create(dto())).rejects.toThrow('pausadas');
+      await expect(service.create(dto(), 'u1')).rejects.toThrow('pausadas');
       expect(realtime.numbersChanged).not.toHaveBeenCalled();
     });
 
@@ -223,13 +226,13 @@ describe('OrdersService', () => {
         .mockResolvedValueOnce({ id: 'o1' }) // depois do conflito de chave única
         .mockResolvedValueOnce(ORDER_ROW); // get()
       prisma.order.create.mockRejectedValueOnce(uniqueViolation());
-      const out = await service.create(dto());
+      const out = await service.create(dto(), 'u1');
       expect(out.id).toBe('o1');
     });
 
     it('outros erros do banco sobem sem ser engolidos', async () => {
       prisma.order.create.mockRejectedValueOnce(new Error('conexão caiu'));
-      await expect(service.create(dto())).rejects.toThrow('conexão caiu');
+      await expect(service.create(dto(), 'u1')).rejects.toThrow('conexão caiu');
     });
   });
 

@@ -28,3 +28,33 @@ export function normalizeCpf(raw: string): string | null {
 // (11) 9****-4321: o suficiente para o comprador reconhecer, sem expor o número.
 export const maskPhone = (d: string) =>
   d.length >= 10 ? `(${d.slice(0, 2)}) ${d[2]}****-${d.slice(-4)}` : '****';
+
+export const UFS = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA',
+  'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+] as const;
+
+export function normalizeZip(raw: string): string | null {
+  const d = onlyDigits(raw);
+  return d.length === 8 ? d : null;
+}
+
+// Data AAAA-MM-DD → Date (UTC, meia-noite). Recusa datas impossíveis como 31/02.
+export function parseDateOnly(value: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!m) return null;
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return d.getUTCFullYear() === Number(m[1]) && d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3])
+    ? d
+    : null;
+}
+
+// Idade completa em anos na data de referência (aniversário conta no próprio dia).
+export function ageOn(birth: Date, today = new Date()): number {
+  let age = today.getUTCFullYear() - birth.getUTCFullYear();
+  const beforeBirthday =
+    today.getUTCMonth() < birth.getUTCMonth() ||
+    (today.getUTCMonth() === birth.getUTCMonth() && today.getUTCDate() < birth.getUTCDate());
+  if (beforeBirthday) age--;
+  return age;
+}

@@ -1,4 +1,4 @@
-import { BadGatewayException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, NotFoundException } from '@nestjs/common';
 import { makeConfig, makePrisma, type PrismaMock, sqlOf, uniqueViolation } from '../../../test/helpers/mocks.js';
 import { GatewayError } from '../payments/payment-provider.js';
 import { RafflesPresenter } from '../raffles/raffles.presenter.js';
@@ -29,7 +29,6 @@ function setup({ gatewayName = 'FAKE', env = 'development' } = {}) {
   const uploads = { urls: vi.fn().mockReturnValue(null) };
   const service = new OrdersService(
     prisma as never,
-    { upsertBuyer: vi.fn().mockResolvedValue({ id: 'u1' }) } as never,
     realtime as never,
     new RafflesPresenter(uploads as never),
     uploads as never,
@@ -105,20 +104,6 @@ describe('OrdersService: cobrança Pix', () => {
     prisma.payment.create.mockRejectedValueOnce(uniqueViolation());
     await ensureCharge(service, 'o1');
     expect(gateway.cancelCharge).toHaveBeenCalledWith('ch1');
-  });
-
-  it('com Asaas, pedido sem CPF é recusado antes de reservar', async () => {
-    const asaas = setup({ gatewayName: 'ASAAS' });
-    asaas.prisma.order.findUnique.mockResolvedValue(null);
-    await expect(
-      asaas.service.create({
-        raffleSlug: 'onix',
-        quantity: 1,
-        buyer: { name: 'Maria', phone: '11987654321' },
-        idempotencyKey: '7f1c3a2e-0000-4000-8000-000000000001',
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(asaas.prisma.$transaction).not.toHaveBeenCalled();
   });
 });
 

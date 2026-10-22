@@ -28,6 +28,18 @@ model User {
   passwordHash String? // só admin usa senha (argon2id)
   sessionVersion Int    @default(0) // incrementar derruba todas as sessões do usuário
   gatewayCustomerId String? // id do cliente no gateway (Asaas exige cadastro antes da cobrança)
+
+  // Cadastro do comprador (mesmos campos do checkout do Wesley Alemão; endereço é opcional)
+  socialName   String?
+  birthDate    DateTime? @db.Date
+  zipCode      String?
+  street       String?
+  streetNumber String?
+  district     String?
+  city         String?
+  state        String? // UF
+  complement   String?
+  reference    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

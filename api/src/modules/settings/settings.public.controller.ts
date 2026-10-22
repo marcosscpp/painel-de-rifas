@@ -19,6 +19,7 @@ export class SettingsPublicController {
       cpfRequired: this.gateway.requiresCpf,
       pixFeeCents: this.config.getOrThrow<number>('PIX_FEE_CENTS'),
       reservationMinutes: this.config.getOrThrow<number>('RESERVATION_MINUTES'),
+      minBuyerAge: this.config.getOrThrow<number>('MIN_BUYER_AGE'),
     };
   }
 }

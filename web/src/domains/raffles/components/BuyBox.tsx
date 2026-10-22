@@ -8,7 +8,7 @@ import {
   TicketIcon,
 } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router'
-import { type BuyerDraft, type BuyerInput, BuyerForm, emptyBuyer, useCreateOrder } from '@/domains/checkout'
+import { type BuyerDraft, type BuyerInput, CheckoutPanel, emptyBuyer, useCreateOrder } from '@/domains/checkout'
 import { Alert, Button, Card, Input, Modal } from '@/shared/components'
 import { ApiError } from '@/shared/lib/http'
 import { cn } from '@/shared/utils/cn'
@@ -49,14 +49,15 @@ export function BuyBox({ raffle, mode, selected, onDeselect }: Props) {
 
   const valid = count >= raffle.minPerOrder && count <= raffle.maxPerOrder
 
-  const buy = (input: BuyerInput) => {
+  // input undefined: compra como o comprador já identificado ("Comprando como...").
+  const buy = (input?: BuyerInput) => {
     attemptKey.current ??= crypto.randomUUID()
     setNotice(undefined)
     createOrder.mutate(
       {
         raffleSlug: raffle.slug,
         ...(mode === 'pick' ? { numbers: [...selected].sort((a, b) => a - b) } : { quantity: qty }),
-        buyer: input,
+        ...(input && { buyer: input }),
         idempotencyKey: attemptKey.current,
       },
       {
@@ -229,9 +230,9 @@ export function BuyBox({ raffle, mode, selected, onDeselect }: Props) {
               <Alert tone="error">{createOrder.error.message}</Alert>
             </div>
           )}
-          <BuyerForm
-            value={buyer}
-            onChange={setBuyer}
+          <CheckoutPanel
+            draft={buyer}
+            onDraftChange={setBuyer}
             submitLabel={`Reservar e pagar ${formatCents(count * raffle.priceCents)}`}
             submitting={createOrder.isPending}
             onSubmit={buy}

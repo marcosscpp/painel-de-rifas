@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -6,38 +6,21 @@ import {
   IsArray,
   IsInt,
   IsOptional,
-  IsString,
   IsUUID,
   Matches,
   Max,
-  MaxLength,
   Min,
-  MinLength,
   ValidateNested,
 } from 'class-validator';
 import { MAX_TOTAL_NUMBERS } from '../../raffles/raffle.rules.js';
+import { BuyerDto } from '../../users/dto/buyer.dto.js';
+
+export { BuyerDto };
 
 export const MAX_NUMBERS_PER_ORDER = 1000;
 
 const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value;
-
-export class BuyerDto {
-  @Transform(trim)
-  @IsString()
-  @MinLength(3)
-  @MaxLength(80)
-  name: string;
-
-  @IsString()
-  @MaxLength(20)
-  phone: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  cpf?: string;
-}
 
 // Informe "quantity" (números aleatórios) ou "numbers" (escolhidos na grade), nunca os dois.
 export class CreateOrderDto {
@@ -59,9 +42,11 @@ export class CreateOrderDto {
   @Min(0, { each: true })
   numbers?: number[];
 
+  // Sem "buyer": usa o comprador da sessão ("Comprando como..."). Com "buyer": cadastra/atualiza.
+  @IsOptional()
   @ValidateNested()
   @Type(() => BuyerDto)
-  buyer: BuyerDto;
+  buyer?: BuyerDto;
 
   // Gerada pelo navegador ao abrir a compra: reenvio (clique duplo, rede ruim) devolve o mesmo pedido.
   @IsUUID()

@@ -55,3 +55,25 @@ export function maskCpfInput(value: string) {
     .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
     .replace(/\.(\d{3})(\d)/, '.$1-$2')
 }
+
+// Máscara enquanto digita: 31/12/1990
+export function maskDateInput(value: string) {
+  const d = value.replace(/\D/g, '').slice(0, 8)
+  return d.replace(/^(\d{2})(\d)/, '$1/$2').replace(/^(\d{2})\/(\d{2})(\d)/, '$1/$2/$3')
+}
+
+// "31/12/1990" → "1990-12-31" (null se incompleta ou impossível, como 31/02)
+export function dateInputToIso(value: string): string | null {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
+  if (!m) return null
+  const [, dd, mm, yyyy] = m
+  const d = new Date(Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd)))
+  if (d.getUTCDate() !== Number(dd) || d.getUTCMonth() !== Number(mm) - 1) return null
+  return `${yyyy}-${mm}-${dd}`
+}
+
+// Máscara enquanto digita: 01310-100
+export function maskZipInput(value: string) {
+  const d = value.replace(/\D/g, '').slice(0, 8)
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d
+}

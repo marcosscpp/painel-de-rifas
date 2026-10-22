@@ -22,7 +22,6 @@ import {
 import { RafflesPresenter } from '../raffles/raffles.presenter.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
 import { UploadsService } from '../uploads/uploads.service.js';
-import { UsersService } from '../users/users.service.js';
 import type { CreateOrderDto } from './dto/create-order.dto.js';
 
 type Tx = Prisma.TransactionClient;
@@ -53,7 +52,6 @@ export class OrdersService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly users: UsersService,
     private readonly realtime: RealtimeService,
     private readonly raffles: RafflesPresenter,
     private readonly uploads: UploadsService,
@@ -73,7 +71,8 @@ export class OrdersService {
   // - rifa pausada no meio da compra: o UPDATE final do contador exige status ACTIVE, senão desfaz tudo;
   // - Pix que não pôde ser gerado: o pedido é cancelado e os números voltam na hora.
 
-  async create(dto: CreateOrderDto) {
+  // buyerId: comprador já resolvido pelo controller (cadastro do checkout ou sessão "Comprando como").
+  async create(dto: CreateOrderDto, buyerId: string) {
     const existing = await this.prisma.order.findUnique({
       where: { idempotencyKey: dto.idempotencyKey },
       select: { id: true },
@@ -85,9 +84,6 @@ export class OrdersService {
 
     if ((dto.quantity == null) === (dto.numbers == null)) {
       throw new BadRequestException('Informe a quantidade ou os números, um dos dois');
-    }
-    if (this.gateway.requiresCpf && !dto.buyer.cpf) {
-      throw new BadRequestException('Informe o CPF para gerar o Pix');
     }
 
     const raffle = await this.prisma.raffle.findUnique({ where: { slug: dto.raffleSlug } });
@@ -108,7 +104,6 @@ export class OrdersService {
     const outOfRange = dto.numbers?.filter((n) => n >= raffle.totalNumbers) ?? [];
     if (outOfRange.length) throw new BadRequestException(`Números inexistentes: ${outOfRange.join(', ')}`);
 
-    const buyer = await this.users.upsertBuyer(dto.buyer);
     const subtotal = qty * raffle.priceCents;
     const expiresAt = new Date(Date.now() + this.reservationMs);
 
@@ -119,7 +114,7 @@ export class OrdersService {
           const order = await tx.order.create({
             data: {
               raffleId: raffle.id,
-              userId: buyer.id,
+              userId: buyerId,
               quantity: qty,
               subtotalCents: subtotal,
               feeCents: this.feeCents,
@@ -443,6 +438,39 @@ export class OrdersService {
           }
         : null,
     };
+  }
+
+  // "Meus números": compras do comprador, mais recentes primeiro. Pedidos expirados/cancelados
+  // aparecem sem números (eles voltaram para a venda).
+  async listForBuyer(userId: string) {
+    const orders = await this.prisma.order.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: {
+        raffle: { select: { slug: true, title: true, status: true, drawDate: true, totalNumbers: true, coverKey: true } },
+        numbers: { select: { number: true }, orderBy: { number: 'asc' } },
+      },
+    });
+    return orders.map((o) => ({
+      id: o.id,
+      status: o.status,
+      quantity: o.quantity,
+      totalCents: o.totalCents,
+      createdAt: o.createdAt,
+      expiresAt: o.expiresAt,
+      paidAt: o.paidAt,
+      refundRequired: o.refundRequired,
+      numbers: o.numbers.map((n) => n.number),
+      raffle: {
+        slug: o.raffle.slug,
+        title: o.raffle.title,
+        status: o.raffle.status,
+        drawDate: o.raffle.drawDate,
+        totalNumbers: o.raffle.totalNumbers,
+        cover: this.uploads.urls(o.raffle.coverKey),
+      },
+    }));
   }
 
   private async readProgress(raffleId: string) {

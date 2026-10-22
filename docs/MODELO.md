@@ -12,13 +12,13 @@ Só dois papéis, decidido em 20/10:
 | `ADMIN` | Equipe do cliente | Painel inteiro, login com senha |
 | `BUYER` | Comprador | Site público, compra e "Meus números" |
 
-Sem níveis intermediários (operador etc.). Login do comprador ainda **a definir** (telefone/CPF sem senha é o padrão das referências).
+Sem níveis intermediários (operador etc.). Comprador sem senha (decidido em 21/10, igual ao Wesley Alemão): depois da primeira compra o site lembra a pessoa por cookie httpOnly de 90 dias ("Comprando como Maria · Trocar"). Em outro aparelho, "Já comprei antes" e "Meus números" pedem celular + CPF do mesmo cadastro.
 
 ## Entidades
 
 | Entidade | Para que serve | Pontos-chave |
 |---|---|---|
-| `User` | Admin e comprador | `role`, `phone` único, `cpf` opcional único, senha só para admin |
+| `User` | Admin e comprador | `role`; comprador: nome, nome social (opcional), celular único (confirmado no checkout), CPF único, nascimento (18+), e-mail único, endereço opcional; `sessionVersion` derruba sessões; senha só para admin |
 | `Raffle` | Uma rifa | `paidCount`/`reservedCount` mantidos na mesma transação da reserva (progresso sem COUNT), `status`, `saleMode` (QUANTITY = roleta, PICK = grade; escolhido pelo admin, o comprador não escolhe), `totalNumbers`, `priceCents`, mínimo e máximo por pedido, datas, resultado da Loteria Federal |
 | `RafflePackage` | Pacotes promocionais ("+10", "+50") | quantidade e destaque |
 | `Prize` / `PrizeImage` | Prêmios e galeria | dinheiro ou item; imagens no MinIO, banco guarda só a chave |
@@ -87,6 +87,5 @@ Fora do escopo: afiliados, WhatsApp, migração para nuvem.
 
 ## Em aberto
 
-- Login do comprador (telefone sem senha? código por SMS?).
 - Regra de conversão do resultado da Loteria Federal.
 - Gateway final (Asaas ou iugu) e aceite do segmento.

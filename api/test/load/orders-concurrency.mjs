@@ -73,7 +73,28 @@ const pickRaffle = await createRaffle('PICK');
 cookie = '';
 
 // ── 2. Pedidos simultâneos ──
-const buyer = (i) => ({ name: `Comprador ${i}`, phone: `119${String(10_000_000 + i).slice(-8)}` });
+// CPF válido e único por comprador (dígitos verificadores calculados).
+function cpfFor(i) {
+  const base = String(100_000_000 + i).slice(-9).split('').map(Number);
+  const dv = (digits) => {
+    const sum = digits.reduce((acc, d, k) => acc + d * (digits.length + 1 - k), 0);
+    const r = (sum * 10) % 11;
+    return r === 10 ? 0 : r;
+  };
+  const d1 = dv(base);
+  return [...base, d1, dv([...base, d1])].join('');
+}
+const buyer = (i) => {
+  const phone = `119${String(10_000_000 + i).slice(-8)}`;
+  return {
+    name: `Comprador Teste ${i}`,
+    phone,
+    phoneConfirm: phone,
+    cpf: cpfFor(i),
+    birthDate: '1990-01-15',
+    email: `comprador${i}@carga.test`,
+  };
+};
 const jobs = [];
 const dupKeys = [];
 for (let i = 0; i < TOTAL_ORDERS; i++) {

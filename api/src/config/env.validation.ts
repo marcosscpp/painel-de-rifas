@@ -104,6 +104,20 @@ export class EnvVars {
   @Min(1)
   @Max(120)
   RESERVATION_MINUTES = 15;
+
+  // Idade mínima do comprador (rifa: 18; título de capitalização costuma usar 16).
+  @Transform(toInt)
+  @IsInt()
+  @Min(16)
+  @Max(21)
+  MIN_BUYER_AGE = 18;
+
+  // Por quantos dias o site lembra o comprador ("Comprando como...").
+  @Transform(toInt)
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  BUYER_SESSION_DAYS = 90;
 }
 
 export function validateEnv(raw: Record<string, unknown>): EnvVars {

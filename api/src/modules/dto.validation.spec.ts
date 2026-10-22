@@ -16,7 +16,14 @@ function errorsOf<T extends object>(cls: new () => T, body: unknown) {
 const order = {
   raffleSlug: 'onix',
   quantity: 3,
-  buyer: { name: 'Maria', phone: '11987654321' },
+  buyer: {
+    name: 'Maria Souza',
+    phone: '11987654321',
+    phoneConfirm: '11987654321',
+    cpf: '529.982.247-25',
+    birthDate: '1990-05-10',
+    email: 'Maria@X.com',
+  },
   idempotencyKey: '7f1c3a2e-0000-4000-8000-000000000001',
 };
 
@@ -43,7 +50,20 @@ describe('validação de entrada', () => {
     });
 
     it('valida o comprador aninhado', () => {
-      expect(errorsOf(CreateOrderDto, { ...order, buyer: { name: 'M', phone: '1' } })).toContain('buyer.name');
+      expect(errorsOf(CreateOrderDto, { ...order, buyer: { ...order.buyer, name: 'Maria' } })).toContain('buyer.name');
+      expect(errorsOf(CreateOrderDto, { ...order, buyer: { ...order.buyer, email: 'nao-e-email' } })).toContain('buyer.email');
+      expect(errorsOf(CreateOrderDto, { ...order, buyer: { ...order.buyer, birthDate: '10/05/1990' } })).toContain('buyer.birthDate');
+    });
+
+    it('comprador da sessão: pedido sem dados é válido no formato', () => {
+      const { buyer: _b, ...semComprador } = order;
+      expect(errorsOf(CreateOrderDto, semComprador)).toEqual([]);
+    });
+
+    it('endereço é opcional, mas se vier precisa do básico', () => {
+      const address = { zipCode: '01310-100', street: 'Av. Paulista', number: '1000', district: 'Bela Vista', city: 'São Paulo', state: 'SP' };
+      expect(errorsOf(CreateOrderDto, { ...order, buyer: { ...order.buyer, address } })).toEqual([]);
+      expect(errorsOf(CreateOrderDto, { ...order, buyer: { ...order.buyer, address: { ...address, state: 'XX' } } })).toContain('buyer.address.state');
     });
   });
 

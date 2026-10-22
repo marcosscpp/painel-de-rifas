@@ -27,17 +27,73 @@ export type OrderPayment = {
   canSimulate: boolean // só com o gateway de teste, fora de produção
 }
 
-export type CheckoutSettings = { cpfRequired: boolean; pixFeeCents: number; reservationMinutes: number }
+export type CheckoutSettings = { cpfRequired: boolean; pixFeeCents: number; reservationMinutes: number; minBuyerAge: number }
 
-export type BuyerInput = { name: string; phone: string; cpf?: string }
+export type AddressInput = {
+  zipCode: string
+  street: string
+  number: string
+  district: string
+  city: string
+  state: string
+  complement?: string
+  reference?: string
+}
+
+// Mesmos campos do cadastro do Wesley Alemão. Opcionais: nome social e endereço.
+export type BuyerInput = {
+  name: string
+  socialName?: string
+  phone: string
+  phoneConfirm: string
+  cpf: string
+  birthDate: string // AAAA-MM-DD
+  email: string
+  address?: AddressInput
+}
+
+// Comprador lembrado neste navegador ("Comprando como...").
+export type BuyerProfile = { name: string; phone: string | null }
+
+export type MyOrder = {
+  id: string
+  status: OrderStatus
+  quantity: number
+  totalCents: number
+  createdAt: string
+  expiresAt: string
+  paidAt: string | null
+  refundRequired: boolean
+  numbers: number[]
+  raffle: {
+    slug: string
+    title: string
+    status: string
+    drawDate: string | null
+    totalNumbers: number
+    cover: ImageUrls | null
+  }
+}
 
 export type CreateOrderInput = {
   raffleSlug: string
   quantity?: number
   numbers?: number[]
-  buyer: BuyerInput
+  buyer?: BuyerInput // sem dados: compra como o comprador da sessão
   idempotencyKey: string
 }
 
 // O que está sendo digitado no formulário do comprador.
-export type BuyerDraft = { name: string; phone: string; cpf: string; accepted: boolean }
+export type BuyerDraft = {
+  name: string
+  socialName: string
+  showSocialName: boolean
+  email: string
+  phone: string
+  phoneConfirm: string
+  birthDate: string // dd/mm/aaaa como digitado
+  cpf: string
+  wantsAddress: boolean
+  address: Required<AddressInput>
+  accepted: boolean
+}
