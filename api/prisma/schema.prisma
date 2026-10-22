@@ -80,6 +80,7 @@ model Raffle {
   endsAt       DateTime?
   drawDate     DateTime?
   coverKey     String? // prefixo da capa no MinIO (ex.: raffles/<id>/cover-<uuid>); front usa -400/-1200.webp
+  featured     Boolean      @default(false) // primeira da home, com capa grande; só uma por vez
 
   // Contadores mantidos na mesma transação da reserva/pagamento: progresso sem COUNT em milhões de linhas.
   paidCount     Int       @default(0)

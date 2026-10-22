@@ -1,4 +1,4 @@
-import { LockKeyIcon, PauseIcon, PlayIcon, RocketLaunchIcon, TrashIcon } from '@phosphor-icons/react'
+import { LockKeyIcon, PauseIcon, PlayIcon, RocketLaunchIcon, StarIcon, TrashIcon } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router'
 import { Alert, Button } from '@/shared/components'
 import { formatInt } from '@/shared/utils/format'
@@ -19,6 +19,7 @@ export function RaffleActions({ raffle }: { raffle: AdminRaffle }) {
   const navigate = useNavigate()
   const act = useRaffleMutation((action: RaffleAction) => adminRafflesApi.transition(raffle.id, action))
   const del = useDeleteRaffle()
+  const feature = useRaffleMutation((featured: boolean) => adminRafflesApi.setFeatured(raffle.id, featured))
 
   const run = (action: RaffleAction) => {
     if (confirm(confirmText[action](raffle))) act.mutate(action)
@@ -52,6 +53,23 @@ export function RaffleActions({ raffle }: { raffle: AdminRaffle }) {
             Encerrar vendas
           </Button>
         )}
+        {s !== 'DRAWN' && (
+          <Button
+            variant="secondary"
+            loading={feature.isPending}
+            onClick={() =>
+              raffle.featured
+                ? feature.mutate(false)
+                : confirm(
+                    'Colocar esta rifa em destaque? Ela aparece primeiro na home, com a capa grande. ' +
+                      'Se outra rifa estiver em destaque, ela deixa de estar.',
+                  ) && feature.mutate(true)
+            }
+          >
+            <StarIcon weight={raffle.featured ? 'fill' : 'bold'} className="size-4 text-anzac-500" />
+            {raffle.featured ? 'Tirar destaque' : 'Destacar na home'}
+          </Button>
+        )}
         {s === 'DRAFT' && (
           <Button
             variant="ghost"
@@ -70,7 +88,12 @@ export function RaffleActions({ raffle }: { raffle: AdminRaffle }) {
       {act.isPending && act.variables === 'publish' && raffle.totalNumbers > 100_000 && (
         <Alert tone="info">Gerando {formatInt(raffle.totalNumbers)} números. Pode levar alguns segundos.</Alert>
       )}
-      {(act.error ?? del.error) && <Alert tone="error">{(act.error ?? del.error)?.message}</Alert>}
+      {raffle.featured && s === 'DRAFT' && (
+        <Alert tone="info">Em destaque: aparece na home assim que for publicada.</Alert>
+      )}
+      {(act.error ?? del.error ?? feature.error) && (
+        <Alert tone="error">{(act.error ?? del.error ?? feature.error)?.message}</Alert>
+      )}
     </div>
   )
 }

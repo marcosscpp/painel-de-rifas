@@ -5,6 +5,7 @@ export type AdminRaffleListItem = {
   slug: string
   title: string
   status: RaffleStatus
+  featured: boolean
   saleMode: SaleMode
   totalNumbers: number
   priceCents: number
@@ -36,6 +37,7 @@ export type AdminRaffle = {
   description: string
   rules: string
   status: RaffleStatus
+  featured: boolean
   saleMode: SaleMode
   totalNumbers: number
   priceCents: number

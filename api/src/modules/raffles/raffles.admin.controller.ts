@@ -19,6 +19,7 @@ import type { UploadedImage } from '../uploads/uploads.service.js';
 import {
   CreateRaffleDto,
   ListRafflesQuery,
+  SetFeaturedDto,
   SetPackagesDto,
   UpdateRaffleDto,
 } from './dto/raffle.dto.js';
@@ -63,6 +64,11 @@ export class RafflesAdminController {
   @Put(':id/packages')
   async setPackages(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetPackagesDto) {
     return this.present.admin(await this.raffles.setPackages(id, dto));
+  }
+
+  @Put(':id/featured')
+  async setFeatured(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetFeaturedDto) {
+    return this.present.admin(await this.raffles.setFeatured(id, dto.featured));
   }
 
   @Post(':id/cover')

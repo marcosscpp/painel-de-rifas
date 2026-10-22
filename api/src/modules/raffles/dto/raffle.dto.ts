@@ -100,6 +100,11 @@ export class SetPackagesDto {
   items: PackageItemDto[];
 }
 
+export class SetFeaturedDto {
+  @IsBoolean()
+  featured: boolean;
+}
+
 export class ListRafflesQuery {
   @IsOptional()
   @IsEnum(RaffleStatus)

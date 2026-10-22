@@ -6,6 +6,7 @@ import { useRaffles } from '../hooks/useRaffles'
 export function HomePage() {
   const { data, isLoading, error } = useRaffles()
 
+  // A API já manda a rifa marcada como destaque em primeiro; sem marcação, a primeira da lista.
   const featured = data?.[0]
   const rest = data ? data.slice(1) : []
 

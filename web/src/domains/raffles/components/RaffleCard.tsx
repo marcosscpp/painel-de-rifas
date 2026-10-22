@@ -19,7 +19,7 @@ export function RaffleCard({ raffle, variant = 'compact' }: Props) {
         <div className="relative aspect-video w-full overflow-hidden bg-watercourse-950">
           {raffle.cover ? (
             <img
-              src={raffle.cover.thumb}
+              src={raffle.cover.full}
               alt=""
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"

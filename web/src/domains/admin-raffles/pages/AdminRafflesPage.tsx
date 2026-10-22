@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CaretRightIcon, FunnelIcon, MagnifyingGlassIcon, PlusIcon, TicketIcon } from '@phosphor-icons/react'
+import { CaretRightIcon, FunnelIcon, MagnifyingGlassIcon, PlusIcon, StarIcon, TicketIcon } from '@phosphor-icons/react'
 import { Link, useNavigate } from 'react-router'
 import {
   Alert,
@@ -48,8 +48,11 @@ const columns: ColumnDef<AdminRaffleListItem>[] = [
           </span>
         )}
         <div className="min-w-0">
-          <p className="truncate font-bold text-charcoal-900 transition-colors group-hover:text-watercourse-800">
-            {r.title}
+          <p className="flex items-center gap-1.5 font-bold text-charcoal-900 transition-colors group-hover:text-watercourse-800">
+            <span className="truncate">{r.title}</span>
+            {r.featured && (
+              <StarIcon weight="fill" className="size-4 shrink-0 text-anzac-500" aria-label="Em destaque na home" />
+            )}
           </p>
           <p className="truncate text-xs text-slate-grey-500">
             /rifa/{r.slug} · {r.saleMode === 'PICK' ? 'Dezenas' : 'Aleatório'}

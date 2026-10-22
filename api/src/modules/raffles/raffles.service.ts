@@ -88,7 +88,8 @@ export class RafflesService {
       take: 50,
       include: { prizes: { orderBy: { position: 'asc' }, take: 1 } },
     });
-    return items.sort((a, b) => order[a.status] - order[b.status]);
+    // A rifa em destaque vem primeiro (a home a mostra grande), depois por status.
+    return items.sort((a, b) => Number(b.featured) - Number(a.featured) || order[a.status] - order[b.status]);
   }
 
   // Página da grade: status de cada número como texto compacto (0 livre, 1 reservado, 2 pago).
@@ -196,6 +197,18 @@ export class RafflesService {
           position,
         })),
       }),
+    ]);
+    return this.get(id);
+  }
+
+  // Só uma rifa em destaque: marcar uma desmarca a anterior na mesma transação.
+  async setFeatured(id: string, featured: boolean) {
+    await this.get(id);
+    await this.prisma.$transaction([
+      ...(featured
+        ? [this.prisma.raffle.updateMany({ where: { featured: true, id: { not: id } }, data: { featured: false } })]
+        : []),
+      this.prisma.raffle.update({ where: { id }, data: { featured } }),
     ]);
     return this.get(id);
   }

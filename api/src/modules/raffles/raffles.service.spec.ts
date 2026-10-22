@@ -162,6 +162,23 @@ describe('RafflesService', () => {
     });
   });
 
+  describe('setFeatured', () => {
+    it('destacar desmarca a rifa que estava em destaque', async () => {
+      await service.setFeatured('r1', true);
+      expect(prisma.raffle.updateMany).toHaveBeenCalledWith({
+        where: { featured: true, id: { not: 'r1' } },
+        data: { featured: false },
+      });
+      expect(prisma.raffle.update).toHaveBeenCalledWith({ where: { id: 'r1' }, data: { featured: true } });
+    });
+
+    it('tirar o destaque não mexe nas outras', async () => {
+      await service.setFeatured('r1', false);
+      expect(prisma.raffle.updateMany).not.toHaveBeenCalled();
+      expect(prisma.raffle.update).toHaveBeenCalledWith({ where: { id: 'r1' }, data: { featured: false } });
+    });
+  });
+
   describe('transition', () => {
     it('recusa transição inválida', async () => {
       await expect(service.transition('r1', 'pause')).rejects.toThrow('Não é possível');
@@ -227,6 +244,16 @@ describe('RafflesService', () => {
       ]);
       const out = await service.listPublic();
       expect(out.map((r) => r.slug)).toEqual(['b', 'd', 'c', 'a']);
+    });
+
+    it('a rifa em destaque vem antes de todas', async () => {
+      prisma.raffle.findMany.mockResolvedValue([
+        { slug: 'a', status: 'ACTIVE', featured: false },
+        { slug: 'b', status: 'PAUSED', featured: true },
+        { slug: 'c', status: 'ACTIVE', featured: false },
+      ]);
+      const out = await service.listPublic();
+      expect(out.map((r) => r.slug)).toEqual(['b', 'a', 'c']);
     });
 
     it('grade: codifica status e limita a faixa ao total de números', async () => {

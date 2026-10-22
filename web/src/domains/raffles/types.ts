@@ -4,6 +4,7 @@ export type RaffleSummary = {
   slug: string
   title: string
   status: RaffleStatus
+  featured: boolean
   priceCents: number
   totalNumbers: number
   drawDate: string | null
