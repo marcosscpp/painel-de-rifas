@@ -1,29 +1,30 @@
 import { useState } from 'react'
 import { FloppyDiskIcon, TrashIcon, TrophyIcon, XIcon } from '@phosphor-icons/react'
 import { Alert, Button, FilePickerButton, Input, Select, Textarea } from '@/shared/components'
-import type { PrizeKind } from '@/shared/types'
-import { centsToInput, parseMoneyToCents } from '@/shared/utils/format'
+import { useZodForm } from '@/shared/hooks/useZodForm'
+import { centsToInput } from '@/shared/utils/format'
 import { prizeKinds } from '../constants'
+import { prizeSchema } from '../schemas'
 import { useRaffleMutation } from '../hooks/useAdminRaffles'
 import { adminRafflesApi } from '../services/admin-raffles.api'
-import type { AdminPrize, AdminRaffle } from '../types'
+import type { AdminPrize, AdminRaffle, PrizeInput } from '../types'
 
 export function PrizeCard({ raffle, prize }: { raffle: AdminRaffle; prize: AdminPrize }) {
   const isDraft = raffle.status === 'DRAFT'
   const finished = raffle.status === 'CLOSED' || raffle.status === 'DRAWN'
 
-  const [title, setTitle] = useState(prize.title)
-  const [description, setDescription] = useState(prize.description)
-  const [kind, setKind] = useState<PrizeKind>(prize.kind)
-  const [value, setValue] = useState(centsToInput(prize.valueCents))
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useZodForm(prizeSchema, {
+    defaultValues: { title: prize.title, description: prize.description, kind: prize.kind, value: centsToInput(prize.valueCents) },
+  })
   const [rejected, setRejected] = useState<string>()
 
-  const save = useRaffleMutation(() =>
-    adminRafflesApi.updatePrize(prize.id, {
-      title,
-      description,
-      ...(isDraft && { kind, valueCents: value ? parseMoneyToCents(value) : null }),
-    }),
+  // Tipo e valor só mudam enquanto a rifa é rascunho.
+  const save = useRaffleMutation(({ kind, valueCents, ...rest }: PrizeInput) =>
+    adminRafflesApi.updatePrize(prize.id, { ...rest, ...(isDraft && { kind, valueCents }) }),
   )
   const remove = useRaffleMutation(() => adminRafflesApi.removePrize(prize.id))
   // Envia uma foto por vez: cada uma fica abaixo do limite de tamanho por requisição.
@@ -58,31 +59,25 @@ export function PrizeCard({ raffle, prize }: { raffle: AdminRaffle; prize: Admin
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label="Nome do prêmio" value={title} onChange={(e) => setTitle(e.target.value)} disabled={finished} />
+        <Input label="Nome do prêmio" disabled={finished} error={errors.title?.message} {...register('title')} />
         <div className="grid grid-cols-2 gap-4">
-          <Select
-            label="Tipo"
-            options={prizeKinds}
-            value={kind}
-            onChange={(e) => setKind(e.target.value as PrizeKind)}
-            disabled={!isDraft}
-          />
+          <Select label="Tipo" options={prizeKinds} disabled={!isDraft} {...register('kind')} />
           <Input
             label="Valor (R$)"
             inputMode="decimal"
             placeholder="Opcional"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
             disabled={!isDraft}
+            error={errors.value?.message}
+            {...register('value')}
           />
         </div>
       </div>
       <Textarea
         label="Descrição"
         rows={2}
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
         disabled={finished}
+        error={errors.description?.message}
+        {...register('description')}
       />
 
       {prize.images.length > 0 && (
@@ -117,7 +112,7 @@ export function PrizeCard({ raffle, prize }: { raffle: AdminRaffle; prize: Admin
             addImages.mutate(files.slice(0, 10 - prize.images.length))
           }}
         />
-        <Button type="button" loading={save.isPending} disabled={finished} onClick={() => save.mutate(undefined)}>
+        <Button type="button" loading={save.isPending} disabled={finished} onClick={handleSubmit((input) => save.mutate(input))}>
           <FloppyDiskIcon weight="bold" className="size-4" />
           Salvar prêmio
         </Button>

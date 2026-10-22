@@ -14,5 +14,6 @@ export {
   useUpdateProfile,
 } from './hooks/useBuyer'
 export { useCreateOrder } from './hooks/useOrder'
+export { addressDraftSchema, type AddressDraft, parseOptionalAddress } from './schemas'
 export { CheckoutPage } from './pages/CheckoutPage'
 export type { AddressInput, BuyerAccount, BuyerDraft, BuyerInput, BuyerProfile, MyOrder, OrderStatus, ProfileInput } from './types'

@@ -1,27 +1,33 @@
 import { useState } from 'react'
-import { Input, Select } from '@/shared/components'
+import { useFormContext } from 'react-hook-form'
+import { Input, MaskedInput, Select } from '@/shared/components'
 import { maskZipInput } from '@/shared/utils/format'
 import { UFS } from '../constants'
+import type { AddressDraft } from '../schemas'
 import { buyerApi } from '../services/buyer.api'
-import type { BuyerDraft } from '../types'
-
-type Address = BuyerDraft['address']
 
 const ufOptions = [{ value: '', label: '--' }, ...UFS.map((uf) => ({ value: uf, label: uf }))]
 
-// Endereço do comprador com busca pelo CEP (ViaCEP via API). Usado no checkout e em "Meus dados".
-export function AddressFields({ value, onChange }: { value: Address; onChange: (v: Address) => void }) {
+type WithAddress = { address: AddressDraft }
+
+// Endereço do comprador com busca pelo CEP (ViaCEP via API). Fica dentro de um formulário
+// React Hook Form que tenha o grupo "address" (checkout, Cadastrar e Meus dados).
+export function AddressFields() {
+  const { control, register, setValue, formState } = useFormContext<WithAddress>()
+  const errors = formState.errors.address
   const [cepState, setCepState] = useState<'idle' | 'loading' | 'error'>('idle')
-  const set = (patch: Partial<Address>) => onChange({ ...value, ...patch })
 
   const lookupCep = async (masked: string) => {
-    set({ zipCode: masked })
     const cep = masked.replace(/\D/g, '')
     if (cep.length !== 8) return
     setCepState('loading')
     try {
       const a = await buyerApi.cep(cep)
-      onChange({ ...value, zipCode: masked, street: a.street, district: a.district, city: a.city, state: a.state })
+      const opts = { shouldValidate: true, shouldDirty: true }
+      setValue('address.street', a.street, opts)
+      setValue('address.district', a.district, opts)
+      setValue('address.city', a.city, opts)
+      setValue('address.state', a.state, opts)
       setCepState('idle')
     } catch {
       setCepState('error')
@@ -30,32 +36,31 @@ export function AddressFields({ value, onChange }: { value: Address; onChange: (
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-cream-200 bg-cream-100/50 p-3">
-      <Input
+      <MaskedInput
+        control={control}
+        name="address.zipCode"
+        mask={(v) => {
+          const masked = maskZipInput(v)
+          void lookupCep(masked)
+          return masked
+        }}
         label="CEP"
-        required
         inputMode="numeric"
         placeholder="00000-000"
-        value={value.zipCode}
         hint={cepState === 'loading' ? 'Buscando endereço…' : undefined}
         error={cepState === 'error' ? 'CEP não encontrado. Preencha à mão.' : undefined}
-        onChange={(e) => void lookupCep(maskZipInput(e.target.value))}
       />
       <div className="grid grid-cols-[1fr_6rem] gap-3">
-        <Input label="Rua ou avenida" required value={value.street} onChange={(e) => set({ street: e.target.value })} />
-        <Input label="Número" required placeholder="123 ou S/N" value={value.number} onChange={(e) => set({ number: e.target.value })} />
+        <Input label="Rua ou avenida" error={errors?.street?.message} {...register('address.street')} />
+        <Input label="Número" placeholder="123 ou S/N" error={errors?.number?.message} {...register('address.number')} />
       </div>
-      <Input label="Bairro" required value={value.district} onChange={(e) => set({ district: e.target.value })} />
+      <Input label="Bairro" error={errors?.district?.message} {...register('address.district')} />
       <div className="grid grid-cols-[1fr_6rem] gap-3">
-        <Input label="Cidade" required value={value.city} onChange={(e) => set({ city: e.target.value })} />
-        <Select label="UF" required value={value.state} onChange={(e) => set({ state: e.target.value })} options={ufOptions} />
+        <Input label="Cidade" error={errors?.city?.message} {...register('address.city')} />
+        <Select label="UF" options={ufOptions} error={errors?.state?.message} {...register('address.state')} />
       </div>
-      <Input
-        label="Complemento (opcional)"
-        placeholder="Apartamento, bloco, casa…"
-        value={value.complement}
-        onChange={(e) => set({ complement: e.target.value })}
-      />
-      <Input label="Ponto de referência (opcional)" value={value.reference} onChange={(e) => set({ reference: e.target.value })} />
+      <Input label="Complemento (opcional)" placeholder="Apartamento, bloco, casa…" {...register('address.complement')} />
+      <Input label="Ponto de referência (opcional)" {...register('address.reference')} />
     </div>
   )
 }

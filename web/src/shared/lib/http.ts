@@ -1,3 +1,4 @@
+import axios, { AxiosError, type AxiosRequestConfig, type Method } from 'axios'
 import { env } from '@/shared/config/env'
 
 export class ApiError extends Error {
@@ -11,44 +12,47 @@ export class ApiError extends Error {
   }
 }
 
-type Options = Omit<RequestInit, 'body'> & { body?: unknown }
+// Instância única do axios. A sessão vai no cookie httpOnly (o JS não vê o token),
+// então só precisamos mandar credenciais; API e site ficam na mesma origem (/api).
+export const api = axios.create({
+  baseURL: env.apiBase,
+  withCredentials: true,
+  headers: { Accept: 'application/json' },
+  timeout: 30_000,
+})
 
-async function parse<T>(res: Response): Promise<T> {
-  if (res.status === 204) return undefined as T
+// Todo erro vira ApiError com a mensagem da API (NestJS manda string ou lista de strings).
+api.interceptors.response.use(
+  (res) => res,
+  (error: unknown) => {
+    if (error instanceof AxiosError) {
+      const status = error.response?.status ?? 0
+      const data = error.response?.data as { message?: string | string[] } | undefined
+      const msg = data?.message
+      const fallback =
+        status === 0
+          ? error.code === AxiosError.ECONNABORTED
+            ? 'O servidor demorou para responder. Tente de novo.'
+            : 'Sem conexão com o servidor. Verifique a internet.'
+          : (error.response?.statusText ?? error.message)
+      return Promise.reject(new ApiError(status, Array.isArray(msg) ? msg.join('\n') : (msg ?? fallback), data))
+    }
+    return Promise.reject(error)
+  },
+)
 
-  const data: unknown = await res.json().catch(() => null)
-  if (!res.ok) {
-    const msg = (data as { message?: string | string[] } | null)?.message
-    throw new ApiError(res.status, Array.isArray(msg) ? msg.join('\n') : (msg ?? res.statusText), data)
-  }
-  return data as T
+type Options = Omit<AxiosRequestConfig, 'url' | 'method' | 'data'> & { method?: Method; body?: unknown }
+
+// Atalho usado pelos services: devolve só o corpo da resposta.
+export async function http<T>(path: string, { body, method = 'GET', ...config }: Options = {}): Promise<T> {
+  const res = await api.request<T>({ url: path, method, data: body, ...config })
+  return res.data
 }
 
-// Cliente HTTP único. A sessão vai no cookie httpOnly (o JS não vê o token),
-// por isso só precisamos mandar credenciais da mesma origem.
-export async function http<T>(path: string, { body, headers, ...init }: Options = {}): Promise<T> {
-  const res = await fetch(`${env.apiBase}${path}`, {
-    ...init,
-    credentials: 'same-origin',
-    headers: {
-      Accept: 'application/json',
-      ...(body !== undefined && { 'Content-Type': 'application/json' }),
-      ...headers,
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  return parse<T>(res)
-}
-
-// Envio de arquivo (multipart). O navegador define o Content-Type com o boundary.
+// Envio de arquivo (multipart). O axios monta o Content-Type com o boundary a partir do FormData.
 export async function upload<T>(path: string, file: File, field = 'file'): Promise<T> {
   const form = new FormData()
   form.append(field, file)
-  const res = await fetch(`${env.apiBase}${path}`, {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { Accept: 'application/json' },
-    body: form,
-  })
-  return parse<T>(res)
+  const res = await api.post<T>(path, form)
+  return res.data
 }

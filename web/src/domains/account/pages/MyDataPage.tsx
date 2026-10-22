@@ -1,22 +1,23 @@
 import { FloppyDiskIcon, MapPinIcon, SignOutIcon } from '@phosphor-icons/react'
-import { type FormEvent, useState } from 'react'
+import { FormProvider } from 'react-hook-form'
 import { Navigate } from 'react-router'
 import {
   AddressFields,
   type BuyerAccount,
-  type BuyerDraft,
+  type AddressDraft,
   useBuyerLogout,
   useBuyerProfile,
   useBuyerSession,
   useUpdateProfile,
 } from '@/domains/checkout'
 import { Alert, Button, Card, FullPageSpinner, InfoList, Input, PageHeader } from '@/shared/components'
+import { useZodForm } from '@/shared/hooks/useZodForm'
 import { formatDate } from '@/shared/utils/format'
 import { AccountTabs } from '../components/AccountTabs'
 import { loginPath } from '../nav'
+import { profileSchema } from '../schemas'
 
-type Address = BuyerDraft['address']
-const emptyAddress: Address = { zipCode: '', street: '', number: '', district: '', city: '', state: '', complement: '', reference: '' }
+const emptyAddress: AddressDraft = { zipCode: '', street: '', number: '', district: '', city: '', state: '', complement: '', reference: '' }
 
 function toForm(p: BuyerAccount) {
   const a = p.address
@@ -43,66 +44,39 @@ function toForm(p: BuyerAccount) {
 // "Meus dados": celular, CPF e nascimento identificam a pessoa e só mudam pelo suporte.
 function ProfileForm({ profile }: { profile: BuyerAccount }) {
   const update = useUpdateProfile()
-  const [f, setF] = useState(() => toForm(profile))
-  const [saved, setSaved] = useState(false)
-  const set = (patch: Partial<typeof f>) => {
-    setSaved(false)
-    setF((s) => ({ ...s, ...patch }))
-  }
+  const form = useZodForm(profileSchema, { defaultValues: toForm(profile) })
+  const {
+    register,
+    watch,
+    handleSubmit,
+    formState: { errors, isDirty },
+  } = form
+  const wantsAddress = watch('wantsAddress')
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
-    const a = f.address
-    update.mutate(
-      {
-        name: f.name,
-        socialName: f.socialName,
-        email: f.email,
-        address: f.wantsAddress
-          ? {
-              zipCode: a.zipCode.replace(/\D/g, ''),
-              street: a.street,
-              number: a.number,
-              district: a.district,
-              city: a.city,
-              state: a.state,
-              ...(a.complement && { complement: a.complement }),
-              ...(a.reference && { reference: a.reference }),
-            }
-          : null,
-      },
-      { onSuccess: () => setSaved(true) },
-    )
-  }
+  const save = handleSubmit((input) =>
+    update.mutate(input, { onSuccess: () => form.reset(form.getValues()) }),
+  )
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3.5">
-      <Input label="Nome completo" required maxLength={80} value={f.name} onChange={(e) => set({ name: e.target.value })} />
-      <Input
-        label="Nome social (opcional)"
-        maxLength={80}
-        value={f.socialName}
-        onChange={(e) => set({ socialName: e.target.value })}
-      />
-      <Input label="E-mail" type="email" required value={f.email} onChange={(e) => set({ email: e.target.value })} />
-      <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-charcoal-900">
-        <input
-          type="checkbox"
-          checked={f.wantsAddress}
-          onChange={(e) => set({ wantsAddress: e.target.checked })}
-          className="size-4 accent-watercourse-800"
-        />
-        <MapPinIcon className="size-4 text-watercourse-700" />
-        Informar meu endereço
-      </label>
-      {f.wantsAddress && <AddressFields value={f.address} onChange={(address) => set({ address })} />}
-      {update.error && <Alert tone="error">{update.error.message}</Alert>}
-      {saved && <Alert tone="success">Dados atualizados.</Alert>}
-      <Button type="submit" loading={update.isPending} className="self-start">
-        <FloppyDiskIcon weight="bold" className="size-4" />
-        Salvar alterações
-      </Button>
-    </form>
+    <FormProvider {...form}>
+      <form onSubmit={save} noValidate className="flex flex-col gap-3.5">
+        <Input label="Nome completo" maxLength={80} error={errors.name?.message} {...register('name')} />
+        <Input label="Nome social (opcional)" maxLength={80} error={errors.socialName?.message} {...register('socialName')} />
+        <Input label="E-mail" type="email" error={errors.email?.message} {...register('email')} />
+        <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-charcoal-900">
+          <input type="checkbox" className="size-4 accent-watercourse-800" {...register('wantsAddress')} />
+          <MapPinIcon className="size-4 text-watercourse-700" />
+          Informar meu endereço
+        </label>
+        {wantsAddress && <AddressFields />}
+        {update.error && <Alert tone="error">{update.error.message}</Alert>}
+        {update.isSuccess && !isDirty && <Alert tone="success">Dados atualizados.</Alert>}
+        <Button type="submit" loading={update.isPending} className="self-start">
+          <FloppyDiskIcon weight="bold" className="size-4" />
+          Salvar alterações
+        </Button>
+      </form>
+    </FormProvider>
   )
 }
 

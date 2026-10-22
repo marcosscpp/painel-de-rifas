@@ -1,18 +1,23 @@
-import { type FormEvent, useState } from 'react'
 import { SignInIcon } from '@phosphor-icons/react'
+import { z } from 'zod'
 import { Alert, Button, Input } from '@/shared/components'
+import { useZodForm } from '@/shared/hooks/useZodForm'
 import { ApiError } from '@/shared/lib/http'
+import { zEmail } from '@/shared/lib/validators'
 import { useLogin } from '../hooks/useSession'
+
+const schema = z.object({
+  email: zEmail,
+  password: z.string().min(1, 'Informe a senha'),
+})
 
 export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const login = useLogin()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
-    login.mutate({ email, password }, { onSuccess })
-  }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useZodForm(schema, { defaultValues: { email: '', password: '' } })
 
   const error =
     login.error instanceof ApiError && login.error.status === 429
@@ -20,24 +25,22 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       : login.error?.message
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit((v) => login.mutate(v, { onSuccess }))} noValidate className="flex flex-col gap-4">
       <Input
         label="E-mail"
         type="email"
         autoComplete="username"
         placeholder="admin@exemplo.com"
-        required
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        error={errors.email?.message}
+        {...register('email')}
       />
       <Input
         label="Senha"
         type="password"
         autoComplete="current-password"
         placeholder="••••••••"
-        required
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        error={errors.password?.message}
+        {...register('password')}
       />
       {error && <Alert tone="error">{error}</Alert>}
       <Button type="submit" variant="primary" className="mt-1 py-3" loading={login.isPending}>

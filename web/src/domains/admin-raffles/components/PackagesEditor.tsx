@@ -1,93 +1,85 @@
-import { useState } from 'react'
+import { useFieldArray } from 'react-hook-form'
 import { FloppyDiskIcon, PlusIcon, SparkleIcon, TrashIcon } from '@phosphor-icons/react'
 import { Alert, Button, Input } from '@/shared/components'
+import { useZodForm } from '@/shared/hooks/useZodForm'
 import { formatCents } from '@/shared/utils/format'
 import { useRaffleMutation } from '../hooks/useAdminRaffles'
+import { packagesSchema } from '../schemas'
 import { adminRafflesApi } from '../services/admin-raffles.api'
 import type { AdminRaffle } from '../types'
 
-type Row = { quantity: string; highlighted: boolean }
+type Items = Array<{ quantity: number; highlighted: boolean }>
 
 // Pacotes promocionais ("+10", "+50"): atalhos de quantidade na página da rifa.
 export function PackagesEditor({ raffle }: { raffle: AdminRaffle }) {
   const finished = raffle.status === 'CLOSED' || raffle.status === 'DRAWN'
-  const [rows, setRows] = useState<Row[]>(() =>
-    raffle.packages.map((p) => ({ quantity: String(p.quantity), highlighted: p.highlighted })),
-  )
-  const save = useRaffleMutation((items: Row[]) =>
-    adminRafflesApi.setPackages(
-      raffle.id,
-      items.map((r) => ({ quantity: Number(r.quantity), highlighted: r.highlighted })),
-    ),
-  )
-
-  const update = (i: number, patch: Partial<Row>) =>
-    setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)))
+  const save = useRaffleMutation((items: Items) => adminRafflesApi.setPackages(raffle.id, items))
+  const {
+    control,
+    register,
+    watch,
+    handleSubmit,
+    formState: { errors },
+  } = useZodForm(packagesSchema(raffle.minPerOrder, raffle.maxPerOrder), {
+    defaultValues: { rows: raffle.packages.map((p) => ({ quantity: String(p.quantity), highlighted: p.highlighted })) },
+  })
+  const { fields, append, remove } = useFieldArray({ control, name: 'rows' })
+  const rows = watch('rows')
 
   return (
-    <div className="flex flex-col gap-3">
-      {rows.length === 0 && (
-        <p className="text-sm text-slate-grey-600">Nenhum pacote. O comprador digita a quantidade.</p>
-      )}
-      {rows.map((r, i) => (
-        <div
-          key={i}
-          className="flex flex-wrap items-center gap-3 rounded-xl border border-cream-200 bg-cream-100/60 p-3"
-        >
-          <Input
-            type="number"
-            min={raffle.minPerOrder}
-            max={raffle.maxPerOrder}
-            aria-label="Quantidade do pacote"
-            placeholder="Qtd."
-            className="w-28 bg-white py-2 font-mono font-bold"
-            value={r.quantity}
-            disabled={finished}
-            onChange={(e) => update(i, { quantity: e.target.value })}
-          />
-          <span className="w-28 text-sm font-semibold text-watercourse-800">
-            {Number(r.quantity) > 0 ? formatCents(Number(r.quantity) * raffle.priceCents) : '-'}
-          </span>
-          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-charcoal-900">
-            <input
-              type="checkbox"
-              checked={r.highlighted}
+    <form onSubmit={handleSubmit((v) => save.mutate(v.rows))} noValidate className="flex flex-col gap-3">
+      {fields.length === 0 && <p className="text-sm text-slate-grey-600">Nenhum pacote. O comprador digita a quantidade.</p>}
+      {fields.map((field, i) => {
+        const qty = Number(rows[i]?.quantity)
+        return (
+          <div key={field.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-cream-200 bg-cream-100/60 p-3">
+            <Input
+              type="number"
+              aria-label="Quantidade do pacote"
+              placeholder="Qtd."
+              className="w-28 bg-white py-2 font-mono font-bold"
               disabled={finished}
-              className="size-4 accent-anzac-500"
-              onChange={(e) => update(i, { highlighted: e.target.checked })}
+              error={errors.rows?.[i]?.quantity?.message}
+              {...register(`rows.${i}.quantity`)}
             />
-            <SparkleIcon weight="fill" className="size-4 text-anzac-500" />
-            Destaque
-          </label>
-          <Button
-            type="button"
-            variant="ghost"
-            className="ml-auto text-error-600 hover:bg-error-50"
-            disabled={finished}
-            onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}
-          >
-            <TrashIcon className="size-4" />
-            Remover
-          </Button>
-        </div>
-      ))}
+            <span className="w-28 text-sm font-semibold text-watercourse-800">
+              {qty > 0 ? formatCents(qty * raffle.priceCents) : '-'}
+            </span>
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-charcoal-900">
+              <input type="checkbox" disabled={finished} className="size-4 accent-anzac-500" {...register(`rows.${i}.highlighted`)} />
+              <SparkleIcon weight="fill" className="size-4 text-anzac-500" />
+              Destaque
+            </label>
+            <Button
+              type="button"
+              variant="ghost"
+              className="ml-auto text-error-600 hover:bg-error-50"
+              disabled={finished}
+              onClick={() => remove(i)}
+            >
+              <TrashIcon className="size-4" />
+              Remover
+            </Button>
+          </div>
+        )
+      })}
       <div className="flex flex-wrap gap-2 pt-1">
         <Button
           type="button"
           variant="secondary"
-          disabled={finished || rows.length >= 12}
-          onClick={() => setRows((rs) => [...rs, { quantity: '', highlighted: false }])}
+          disabled={finished || fields.length >= 12}
+          onClick={() => append({ quantity: '', highlighted: false })}
         >
           <PlusIcon weight="bold" className="size-4" />
           Adicionar pacote
         </Button>
-        <Button type="button" loading={save.isPending} disabled={finished} onClick={() => save.mutate(rows)}>
+        <Button type="submit" loading={save.isPending} disabled={finished}>
           <FloppyDiskIcon weight="bold" className="size-4" />
           Salvar pacotes
         </Button>
       </div>
       {save.isSuccess && !save.isPending && <Alert tone="success">Pacotes salvos.</Alert>}
       {save.error && <Alert tone="error">{save.error.message}</Alert>}
-    </div>
+    </form>
   )
 }

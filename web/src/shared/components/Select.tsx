@@ -1,4 +1,4 @@
-import { type ReactNode, type SelectHTMLAttributes, useId } from 'react'
+import { type ReactNode, type ComponentProps, useId } from 'react'
 import { CaretDownIcon } from '@phosphor-icons/react'
 import { cn } from '@/shared/utils/cn'
 import { FieldWrap, fieldControlBase } from './Field'
@@ -9,7 +9,7 @@ export type SelectOption = {
   disabled?: boolean
 }
 
-export type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
+export type SelectProps = ComponentProps<'select'> & {
   label?: string
   error?: string
   hint?: string
@@ -65,10 +65,6 @@ export function Select({
       </span>
     </div>
   )
-
-  if (!label && !error && !hint) {
-    return selectElement
-  }
 
   return (
     <FieldWrap label={label} error={error} hint={hint} id={fieldId} className={wrapperClassName}>

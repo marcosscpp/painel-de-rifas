@@ -1,23 +1,29 @@
-import { type FormEvent, useState } from 'react'
 import { PlusIcon } from '@phosphor-icons/react'
+import { z } from 'zod'
 import { Alert, Button, Input, Select } from '@/shared/components'
-import type { PrizeKind } from '@/shared/types'
+import { useZodForm } from '@/shared/hooks/useZodForm'
 import { prizeKinds } from '../constants'
 import { useRaffleMutation } from '../hooks/useAdminRaffles'
 import { adminRafflesApi } from '../services/admin-raffles.api'
 import type { AdminRaffle, PrizeInput } from '../types'
 import { PrizeCard } from './PrizeCard'
 
+const newPrizeSchema = z.object({
+  title: z.string().trim().min(2, 'Mínimo de 2 caracteres').max(120),
+  kind: z.enum(['ITEM', 'MONEY']),
+})
+
 export function PrizesEditor({ raffle }: { raffle: AdminRaffle }) {
   const finished = raffle.status === 'CLOSED' || raffle.status === 'DRAWN'
-  const [title, setTitle] = useState('')
-  const [kind, setKind] = useState<PrizeKind>('ITEM')
   const create = useRaffleMutation((input: PrizeInput) => adminRafflesApi.createPrize(raffle.id, input))
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useZodForm(newPrizeSchema, { defaultValues: { title: '', kind: 'ITEM' } })
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
-    create.mutate({ title, kind }, { onSuccess: () => setTitle('') })
-  }
+  const submit = handleSubmit((input) => create.mutate(input, { onSuccess: () => reset({ title: '', kind: input.kind }) }))
 
   return (
     <div className="flex flex-col gap-4">
@@ -28,25 +34,14 @@ export function PrizesEditor({ raffle }: { raffle: AdminRaffle }) {
       {!finished && (
         <form
           onSubmit={submit}
+          noValidate
           className="flex flex-wrap items-end gap-3 rounded-2xl border border-dashed border-cream-300 bg-cream-100/70 p-4"
         >
           <div className="min-w-56 flex-1">
-            <Input
-              label="Novo prêmio"
-              required
-              minLength={2}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex.: Onix 0km"
-            />
+            <Input label="Novo prêmio" placeholder="Ex.: Onix 0km" error={errors.title?.message} {...register('title')} />
           </div>
           <div className="w-56">
-            <Select
-              label="Tipo"
-              options={prizeKinds}
-              value={kind}
-              onChange={(e) => setKind(e.target.value as PrizeKind)}
-            />
+            <Select label="Tipo" options={prizeKinds} {...register('kind')} />
           </div>
           <Button type="submit" loading={create.isPending}>
             <PlusIcon weight="bold" className="size-4" />

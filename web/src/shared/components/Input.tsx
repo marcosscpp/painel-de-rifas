@@ -1,8 +1,8 @@
-import { type InputHTMLAttributes, type ReactNode, useId } from 'react'
+import { type ComponentProps, type ReactNode, useId } from 'react'
 import { cn } from '@/shared/utils/cn'
 import { FieldWrap, fieldControlBase } from './Field'
 
-export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
+export type InputProps = ComponentProps<'input'> & {
   label?: string
   error?: string
   hint?: string
@@ -50,10 +50,8 @@ export function Input({
     </div>
   )
 
-  if (!label && !error && !hint) {
-    return inputElement
-  }
-
+  // Sempre com o mesmo invólucro: se a estrutura mudasse quando o erro aparece, o <input>
+  // seria recriado e a pessoa perderia o foco no meio da digitação.
   return (
     <FieldWrap label={label} error={error} hint={hint} id={inputId} className={wrapperClassName}>
       {inputElement}

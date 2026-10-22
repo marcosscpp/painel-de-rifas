@@ -1,8 +1,8 @@
-import { type TextareaHTMLAttributes, useId } from 'react'
+import { type ComponentProps, useId } from 'react'
 import { cn } from '@/shared/utils/cn'
 import { FieldWrap, fieldControlBase } from './Field'
 
-export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
+export type TextareaProps = ComponentProps<'textarea'> & {
   label?: string
   error?: string
   hint?: string
@@ -25,10 +25,6 @@ export function Textarea({ label, error, hint, wrapperClassName, className, id, 
       )}
     />
   )
-
-  if (!label && !error && !hint) {
-    return textareaElement
-  }
 
   return (
     <FieldWrap label={label} error={error} hint={hint} id={fieldId} className={wrapperClassName}>
