@@ -1,10 +1,15 @@
 import { ArrowRightIcon, ChatCircleDotsIcon } from '@phosphor-icons/react'
 import { Alert, CardGridSkeleton, EmptyState } from '@/shared/components'
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle'
+import { useSiteSettings } from '@/shared/hooks/useSiteSettings'
+import { whatsappUrl } from '@/shared/utils/format'
 import { RaffleCard } from '../components/RaffleCard'
 import { useRaffles } from '../hooks/useRaffles'
 
 export function HomePage() {
   const { data, isLoading, error } = useRaffles()
+  useDocumentTitle()
+  const support = useSiteSettings().data?.supportWhatsapp
 
   // A API já manda a rifa marcada como destaque em primeiro; sem marcação, a primeira da lista.
   const featured = data?.[0]
@@ -34,10 +39,11 @@ export function HomePage() {
         </div>
       )}
 
-      {/* Card "Dúvidas? Fale com nossa equipe" (igual à referência) */}
+      {/* Card "Dúvidas? Fale com nossa equipe" (igual à referência): abre o WhatsApp de suporte, se configurado */}
       <a
         id="duvidas"
-        href="#duvidas"
+        href={support ? whatsappUrl(support) : '#duvidas'}
+        {...(support && { target: '_blank', rel: 'noopener noreferrer' })}
         className="group mt-2 flex items-center justify-between rounded-2xl border border-cream-200 bg-white p-4 shadow-2xs transition hover:border-anzac-400 hover:shadow-sm"
       >
         <div className="flex items-center gap-3.5">

@@ -1,6 +1,6 @@
 import { CheckCircleIcon, ClockCountdownIcon, ReceiptIcon, ShieldWarningIcon, TicketIcon } from '@phosphor-icons/react'
 import { Link, useParams } from 'react-router'
-import { Alert, Badge, Card, CheckoutSkeleton, CoverThumb, Disclosure, InfoList } from '@/shared/components'
+import { Alert, Badge, Card, CheckoutSkeleton, ContactLinks, CoverThumb, Disclosure, InfoList } from '@/shared/components'
 import { useCountdown } from '@/shared/hooks/useCountdown'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle'
 import { ApiError } from '@/shared/lib/http'
@@ -74,6 +74,13 @@ export function CheckoutPage() {
           </div>
         )}
       </div>
+
+      {order.status === 'PAID' && (
+        <Card className="flex flex-col items-center gap-3 p-4 text-center">
+          <p className="text-sm font-semibold text-charcoal-900">Acompanhe o sorteio e fale com a gente</p>
+          <ContactLinks tone="card" />
+        </Card>
+      )}
 
       {order.refundRequired && (
         <Alert tone="warning">

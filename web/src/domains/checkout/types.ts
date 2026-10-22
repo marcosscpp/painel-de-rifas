@@ -34,8 +34,6 @@ export type OrderPayment = {
   canSimulate: boolean // só com o gateway de teste, fora de produção
 }
 
-export type CheckoutSettings = { cpfRequired: boolean; pixFeeCents: number; reservationMinutes: number; minBuyerAge: number }
-
 export type AddressInput = {
   zipCode: string
   street: string

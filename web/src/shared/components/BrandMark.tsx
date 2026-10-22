@@ -1,3 +1,4 @@
+import { useSiteName } from '@/shared/hooks/useSiteSettings'
 import { cn } from '@/shared/utils/cn'
 
 type Props = {
@@ -9,7 +10,9 @@ type Props = {
 }
 
 // Logo WinClub: ícone + nome em SVG (web/public/brand). Fontes da marca em docs/marca/.
-export function BrandMark({ name = 'WinClub', subtitle, tone = 'light', size = 'md', className }: Props) {
+// O desenho do nome é fixo (SVG); o texto (alt) usa o nome configurado em Configurações.
+export function BrandMark({ name, subtitle, tone = 'light', size = 'md', className }: Props) {
+  const siteName = useSiteName()
   const isDark = tone === 'dark'
   return (
     <span className={cn('inline-flex items-center gap-2.5 select-none', className)}>
@@ -25,7 +28,7 @@ export function BrandMark({ name = 'WinClub', subtitle, tone = 'light', size = '
       <span className="flex flex-col leading-none">
         <img
           src={isDark ? '/brand/nome-sem-slogan-fundo-escuro.svg' : '/brand/nome-sem-slogan.svg'}
-          alt={name}
+          alt={name ?? siteName}
           className={cn('w-auto', size === 'sm' ? 'h-3.5' : 'h-[18px]')}
         />
         {subtitle && (

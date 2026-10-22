@@ -15,20 +15,22 @@ import {
 import { Link } from 'react-router'
 import { useBuyerLogout, useBuyerSession } from '@/domains/checkout'
 import { BrandMark } from '@/shared/components'
-import { env } from '@/shared/config/env'
+import { useSiteSettings } from '@/shared/hooks/useSiteSettings'
+import { whatsappUrl } from '@/shared/utils/format'
 import { MenuItem, MenuSection } from './nav-items'
 
 // Menu de tela cheia (referência: "Olá, Nome" + atalhos e seções Principal / Minha conta / Comunidade).
 export function PublicMenu({ onClose }: { onClose: () => void }) {
   const buyer = useBuyerSession().data
   const logout = useBuyerLogout()
+  const support = useSiteSettings().data?.supportWhatsapp
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-watercourse-950 text-cream-50">
       <div className="border-b border-watercourse-800/80">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3.5">
           <div className="size-9" />
-          <BrandMark name={env.appName} tone="dark" />
+          <BrandMark tone="dark" />
           <button
             type="button"
             onClick={onClose}
@@ -100,7 +102,13 @@ export function PublicMenu({ onClose }: { onClose: () => void }) {
         <MenuSection title="Comunidade">
           <MenuItem href="#duvidas" icon={MegaphoneIcon} label="Avisos oficiais" onClick={onClose} />
           <MenuItem href="#duvidas" icon={NewspaperIcon} label="Artigos e novidades" onClick={onClose} />
-          <MenuItem href="#duvidas" icon={HeadsetIcon} label="Suporte" onClick={onClose} />
+          <MenuItem
+            href={support ? whatsappUrl(support) : '#duvidas'}
+            external={!!support}
+            icon={HeadsetIcon}
+            label="Suporte"
+            onClick={onClose}
+          />
         </MenuSection>
 
         <div className="space-y-1.5 pt-2">

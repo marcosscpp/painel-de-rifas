@@ -1,8 +1,10 @@
 import { ArrowLeftIcon, CompassIcon } from '@phosphor-icons/react'
 import { Link } from 'react-router'
 import { Button } from '@/shared/components'
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle'
 
 export function NotFoundPage() {
+  useDocumentTitle('Página não encontrada')
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-cream-100 p-6 text-center">
       <div className="flex size-16 items-center justify-center rounded-2xl border border-anzac-300 bg-anzac-50 p-4 text-anzac-600 shadow-xs">

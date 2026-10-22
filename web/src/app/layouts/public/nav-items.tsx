@@ -37,12 +37,14 @@ export function MenuItem({
   label,
   to,
   href,
+  external,
   onClick,
 }: {
   icon: Icon
   label: string
   to?: string
   href?: string
+  external?: boolean
   onClick: () => void
 }) {
   const content = (
@@ -59,7 +61,12 @@ export function MenuItem({
     )
   if (href)
     return (
-      <a href={href} onClick={onClick} className={menuLinkClass}>
+      <a
+        href={href}
+        onClick={onClick}
+        className={menuLinkClass}
+        {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
+      >
         {content}
       </a>
     )

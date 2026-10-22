@@ -13,6 +13,9 @@ export const formatPhone = (digits: string) =>
   digits.replace(/\D/g, '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3')
 
 // Número da rifa com zeros à esquerda (ex.: 0042 numa rifa de 10.000 números).
+// Link do wa.me; com 12-13 dígitos o número já veio com o código do país.
+export const whatsappUrl = (digits: string) => `https://wa.me/${digits.length > 11 ? digits : `55${digits}`}`
+
 export const padNumber = (n: number, total: number) => String(n).padStart(String(total - 1).length, '0')
 
 // "1.234,56" ou "1234.56" → 123456 centavos. Retorna null se não for um valor válido.

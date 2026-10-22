@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSiteSettings } from '@/shared/hooks/useSiteSettings'
 import { useSocketEvent, useSocketRoom } from '@/shared/hooks/useSocket'
 import { ordersApi } from '../services/orders.api'
 
@@ -44,5 +45,5 @@ export function useSimulatePayment() {
 
 // Regras do checkout que vêm do servidor (ex.: CPF obrigatório com o Asaas).
 export function useCheckoutSettings() {
-  return useQuery({ queryKey: ['checkout-settings'], queryFn: ordersApi.settings, staleTime: 5 * 60_000 })
+  return useSiteSettings()
 }

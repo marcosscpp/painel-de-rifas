@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import { env } from '@/shared/config/env'
+import { useSiteName } from './useSiteSettings'
 
 export function useDocumentTitle(title?: string) {
+  const siteName = useSiteName()
   useEffect(() => {
-    document.title = title ? `${title} · ${env.appName}` : env.appName
-  }, [title])
+    document.title = title ? `${title} · ${siteName}` : siteName
+  }, [title, siteName])
 }

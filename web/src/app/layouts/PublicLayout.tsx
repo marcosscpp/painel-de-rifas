@@ -9,8 +9,8 @@ import {
   WalletIcon,
 } from '@phosphor-icons/react'
 import { Link, Outlet } from 'react-router'
-import { BrandMark } from '@/shared/components'
-import { env } from '@/shared/config/env'
+import { BrandMark, ContactLinks } from '@/shared/components'
+import { useSiteName } from '@/shared/hooks/useSiteSettings'
 import { AccountButton } from './public/AccountButton'
 import { HeaderTab } from './public/nav-items'
 import { PublicMenu } from './public/PublicMenu'
@@ -19,6 +19,7 @@ const currentYear = new Date().getFullYear()
 
 export function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const siteName = useSiteName()
 
   return (
     <div className="flex min-h-dvh flex-col bg-cream-100 text-charcoal-900">
@@ -37,7 +38,7 @@ export function PublicLayout() {
             </button>
 
             <Link to="/" className="group">
-              <BrandMark name={env.appName} tone="dark" />
+              <BrandMark tone="dark" />
             </Link>
 
             <AccountButton />
@@ -85,6 +86,8 @@ export function PublicLayout() {
             </span>
           </div>
 
+          <ContactLinks />
+
           <p className="max-w-3xl text-[11px] leading-relaxed text-slate-grey-500">
             As campanhas e sorteios realizados na plataforma têm apuração baseada nas extrações oficiais da Loteria
             Federal. É proibida a venda de cotas para menores de dezoito anos. Antes de participar, consulte
@@ -92,7 +95,7 @@ export function PublicLayout() {
           </p>
 
           <p className="text-xs font-medium text-slate-grey-600">
-            {currentYear} {env.appName} © - Todos os direitos reservados.
+            {currentYear} {siteName} © - Todos os direitos reservados.
           </p>
         </div>
       </footer>

@@ -7,27 +7,27 @@ const onlyDigits = ({ value }: { value: unknown }) => (typeof value === 'string'
 export class UpdateSettingsDto {
   @IsOptional()
   @Transform(trim)
-  @IsString()
-  @MinLength(2)
-  @MaxLength(40)
+  @IsString({ message: 'Nome do site inválido' })
+  @MinLength(2, { message: 'Nome do site: mínimo de 2 caracteres' })
+  @MaxLength(40, { message: 'Nome do site: até 40 caracteres' })
   siteName?: string;
 
   @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(2000) // até R$ 20
+  @IsInt({ message: 'Taxa do Pix: valor em centavos' })
+  @Min(0, { message: 'Taxa do Pix: de R$ 0,00 a R$ 20,00' })
+  @Max(2000, { message: 'Taxa do Pix: de R$ 0,00 a R$ 20,00' }) // até R$ 20
   pixFeeCents?: number;
 
   @IsOptional()
-  @IsInt()
-  @Min(5)
-  @Max(60)
+  @IsInt({ message: 'Tempo para pagar: número inteiro de minutos' })
+  @Min(5, { message: 'Tempo para pagar: de 5 a 60 minutos' })
+  @Max(60, { message: 'Tempo para pagar: de 5 a 60 minutos' })
   reservationMinutes?: number;
 
   @IsOptional()
-  @IsInt()
-  @Min(16)
-  @Max(21)
+  @IsInt({ message: 'Idade mínima: número inteiro' })
+  @Min(16, { message: 'Idade mínima: de 16 a 21 anos' })
+  @Max(21, { message: 'Idade mínima: de 16 a 21 anos' })
   minBuyerAge?: number;
 
   @IsOptional()
@@ -40,13 +40,13 @@ export class UpdateSettingsDto {
   @Transform(trim)
   @ValidateIf((_, v) => v !== '')
   @IsUrl({ protocols: ['https'], require_protocol: true }, { message: 'Link do grupo precisa começar com https://' })
-  @MaxLength(300)
+  @MaxLength(300, { message: 'Link do grupo: até 300 caracteres' })
   whatsappGroupUrl?: string;
 
   @IsOptional()
   @Transform(trim)
   @ValidateIf((_, v) => v !== '')
   @IsUrl({ protocols: ['https'], require_protocol: true }, { message: 'Link do Instagram precisa começar com https://' })
-  @MaxLength(300)
+  @MaxLength(300, { message: 'Link do Instagram: até 300 caracteres' })
   instagramUrl?: string;
 }

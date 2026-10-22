@@ -15,7 +15,6 @@ import {
 import { Link, NavLink, Outlet } from 'react-router'
 import { useLogout, useSession } from '@/domains/auth'
 import { BrandMark, Spinner } from '@/shared/components'
-import { env } from '@/shared/config/env'
 import { cn } from '@/shared/utils/cn'
 
 const nav = [
@@ -35,8 +34,8 @@ export function AdminLayout() {
 
   const sidebarContent = (
     <>
-      <div className="flex items-center justify-between border-b border-watercourse-800/80 px-5 py-4">
-        <BrandMark name={env.appName} tone="dark" />
+      <div className="flex shrink-0 items-center justify-between border-b border-watercourse-800/80 px-5 py-4">
+        <BrandMark tone="dark" />
         <button
           type="button"
           onClick={() => setMobileOpen(false)}
@@ -47,7 +46,7 @@ export function AdminLayout() {
         </button>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
         {nav.map((item) => {
           const Icon = item.icon
           return (
@@ -77,7 +76,7 @@ export function AdminLayout() {
       </nav>
 
       {/* Rodapé unificado: perfil + ações rápidas (Ver loja / Sair) */}
-      <div className="border-t border-watercourse-800/80 p-3">
+      <div className="shrink-0 border-t border-watercourse-800/80 p-3">
         <div className="rounded-2xl border border-watercourse-800/90 bg-watercourse-900/55 p-3">
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-watercourse-800 font-wide text-sm font-bold text-anzac-300 ring-1 ring-anzac-400/35">
@@ -117,8 +116,8 @@ export function AdminLayout() {
   return (
     <div className="flex min-h-dvh flex-col bg-cream-100 md:flex-row">
       {/* Topbar Mobile */}
-      <header className="flex items-center justify-between border-b border-watercourse-800 bg-watercourse-950 px-4 py-3 text-cream-50 md:hidden">
-        <BrandMark name={env.appName} tone="dark" size="sm" />
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-watercourse-800 bg-watercourse-950 px-4 py-3 text-cream-50 md:hidden">
+        <BrandMark tone="dark" size="sm" />
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
@@ -133,14 +132,14 @@ export function AdminLayout() {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
           <div className="fixed inset-0 bg-charcoal-950/60 backdrop-blur-xs" onClick={() => setMobileOpen(false)} />
-          <aside className="relative z-10 flex w-64 flex-col bg-watercourse-950 text-cream-50 shadow-2xl">
+          <aside className="relative z-10 flex h-dvh w-64 flex-col overflow-hidden bg-watercourse-950 text-cream-50 shadow-2xl">
             {sidebarContent}
           </aside>
         </div>
       )}
 
       {/* Sidebar Desktop */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-watercourse-900 bg-watercourse-950 text-cream-50 md:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col self-start overflow-hidden border-r border-watercourse-900 bg-watercourse-950 text-cream-50 md:flex">
         {sidebarContent}
       </aside>
 
