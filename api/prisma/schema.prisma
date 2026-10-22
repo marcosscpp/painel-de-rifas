@@ -88,7 +88,10 @@ model Raffle {
 
   // Resultado (Loteria Federal)
   lotteryContest String? // número do concurso
-  lotteryResult  String? // número sorteado pela Loteria
+  lotteryResult  String? // regra aplicada e como o número foi formado (texto para o público)
+  lotteryPrizes  String[] @default([]) // os 5 prêmios do concurso da Loteria Federal
+  winnerOrderId  String?  @db.Uuid // pedido dono do número ganhador
+  winnerPublicName String? // como o ganhador aparece no site: "Maria S. · Campinas/SP"
   winningNumber  Int? // número da rifa após a regra de conversão
   drawnAt        DateTime?
 
@@ -200,6 +203,7 @@ model Order {
   reservedNumbers Int[]      @default([])
   // Pagou depois de expirar e algum número já tinha sido vendido: reembolsar pelo painel.
   refundRequired Boolean     @default(false)
+  refundedAt     DateTime? // reembolso feito pelo admin (fora do sistema) e registrado aqui
   expiresAt      DateTime
   paidAt         DateTime?
   createdAt      DateTime    @default(now())

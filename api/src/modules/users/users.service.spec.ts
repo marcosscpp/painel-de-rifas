@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { makeConfig, makePrisma, type PrismaMock, uniqueViolation } from '../../../test/helpers/mocks.js';
+import { makePrisma, makeSettings, type PrismaMock, uniqueViolation } from '../../../test/helpers/mocks.js';
 import type { BuyerDto } from './dto/buyer.dto.js';
 import { UsersService } from './users.service.js';
 
@@ -19,7 +19,7 @@ describe('UsersService', () => {
 
   beforeEach(() => {
     prisma = makePrisma();
-    service = new UsersService(prisma as never, makeConfig({ MIN_BUYER_AGE: 18 }) as never);
+    service = new UsersService(prisma as never, makeSettings() as never);
     prisma.user.findUnique.mockResolvedValue(null);
     prisma.user.upsert.mockResolvedValue({ id: 'u1' });
   });

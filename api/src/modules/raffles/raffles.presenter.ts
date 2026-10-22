@@ -94,7 +94,14 @@ export class RafflesPresenter {
       })),
       result:
         r.status === 'DRAWN'
-          ? { lotteryContest: r.lotteryContest, winningNumber: r.winningNumber, drawnAt: r.drawnAt }
+          ? {
+              lotteryContest: r.lotteryContest,
+              lotteryPrizes: r.lotteryPrizes,
+              winningNumber: r.winningNumber,
+              explanation: r.lotteryResult,
+              winnerName: r.winnerPublicName,
+              drawnAt: r.drawnAt,
+            }
           : null,
     };
   }

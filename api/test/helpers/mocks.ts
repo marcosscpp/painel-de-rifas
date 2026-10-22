@@ -59,3 +59,18 @@ export const uniqueViolation = () =>
 
 // Texto do SQL de uma chamada de $queryRaw/$executeRaw feita com template literal.
 export const sqlOf = (call: unknown[]) => (call[0] as TemplateStringsArray).join('?');
+
+// SettingsService com os valores padrão da instalação.
+export const makeSettings = (over: Record<string, unknown> = {}) => ({
+  get: vi.fn().mockResolvedValue({
+    siteName: 'WinClub',
+    pixFeeCents: 199,
+    reservationMinutes: 15,
+    minBuyerAge: 18,
+    supportWhatsapp: '',
+    whatsappGroupUrl: '',
+    instagramUrl: '',
+    ...over,
+  }),
+  update: vi.fn(),
+});

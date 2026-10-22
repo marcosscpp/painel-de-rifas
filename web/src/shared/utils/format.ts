@@ -77,3 +77,8 @@ export function maskZipInput(value: string) {
   const d = value.replace(/\D/g, '').slice(0, 8)
   return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d
 }
+
+export const formatCpf = (digits: string | null | undefined) =>
+  digits ? digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4') : ''
+
+export const formatDate = (iso: string | Date) => new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(iso))

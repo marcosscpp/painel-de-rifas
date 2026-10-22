@@ -21,6 +21,7 @@ import {
 } from '../payments/payment-provider.js';
 import { RafflesPresenter } from '../raffles/raffles.presenter.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
+import { SettingsService } from '../settings/settings.service.js';
 import { UploadsService } from '../uploads/uploads.service.js';
 import type { CreateOrderDto } from './dto/create-order.dto.js';
 
@@ -45,8 +46,6 @@ const isUniqueViolation = (e: unknown) =>
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
-  private readonly reservationMs: number;
-  private readonly feeCents: number;
   private readonly simulateAllowed: boolean;
   private expiring = false;
 
@@ -57,9 +56,8 @@ export class OrdersService {
     private readonly uploads: UploadsService,
     config: ConfigService,
     @Inject(PAYMENT_PROVIDER) private readonly gateway: PaymentGateway,
+    private readonly settings: SettingsService,
   ) {
-    this.reservationMs = config.getOrThrow<number>('RESERVATION_MINUTES') * 60_000;
-    this.feeCents = config.getOrThrow<number>('PIX_FEE_CENTS');
     this.simulateAllowed = gateway.name === 'FAKE' && config.get('NODE_ENV') !== 'production';
   }
 
@@ -105,7 +103,9 @@ export class OrdersService {
     if (outOfRange.length) throw new BadRequestException(`Números inexistentes: ${outOfRange.join(', ')}`);
 
     const subtotal = qty * raffle.priceCents;
-    const expiresAt = new Date(Date.now() + this.reservationMs);
+    // Taxa e tempo de reserva vêm das configurações do admin (cache de poucos segundos).
+    const { pixFeeCents: feeCents, reservationMinutes } = await this.settings.get();
+    const expiresAt = new Date(Date.now() + reservationMinutes * 60_000);
 
     let result: { orderId: string; picked: number[] };
     try {
@@ -117,8 +117,8 @@ export class OrdersService {
               userId: buyerId,
               quantity: qty,
               subtotalCents: subtotal,
-              feeCents: this.feeCents,
-              totalCents: subtotal + this.feeCents,
+              feeCents,
+              totalCents: subtotal + feeCents,
               idempotencyKey: dto.idempotencyKey,
               expiresAt,
             },

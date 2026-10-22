@@ -1,8 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Prisma } from '../../generated/prisma/client.js';
 import { ageOn, normalizeCpf, normalizePhone, normalizeZip, parseDateOnly } from '../../common/utils/br.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
+import { SettingsService } from '../settings/settings.service.js';
 import type { BuyerDto } from './dto/buyer.dto.js';
 
 const isUniqueViolation = (e: unknown) =>
@@ -10,14 +10,10 @@ const isUniqueViolation = (e: unknown) =>
 
 @Injectable()
 export class UsersService {
-  private readonly minAge: number;
-
   constructor(
     private readonly prisma: PrismaService,
-    config: ConfigService,
-  ) {
-    this.minAge = config.get<number>('MIN_BUYER_AGE') ?? 18;
-  }
+    private readonly settings: SettingsService,
+  ) {}
 
   // Cadastro do comprador no checkout. O celular identifica a pessoa (sem senha) e o CPF
   // protege o cadastro: um celular já ligado a um CPF não aceita outro CPF.
@@ -34,7 +30,8 @@ export class UsersService {
     if (!birthDate) throw new BadRequestException('Data de nascimento inválida');
     const age = ageOn(birthDate);
     if (age > 120 || age < 0) throw new BadRequestException('Data de nascimento inválida');
-    if (age < this.minAge) throw new BadRequestException(`Venda permitida apenas para maiores de ${this.minAge} anos`);
+    const { minBuyerAge } = await this.settings.get();
+    if (age < minBuyerAge) throw new BadRequestException(`Venda permitida apenas para maiores de ${minBuyerAge} anos`);
 
     const address = input.address
       ? {
