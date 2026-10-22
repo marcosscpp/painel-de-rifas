@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { Interval } from '@nestjs/schedule';
 import { Prisma } from '../../generated/prisma/client.js';
 import { maskPhone } from '../../common/utils/br.js';
+import { PiiCipher } from '../../infra/crypto/pii-cipher.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import {
   GatewayError,
@@ -57,6 +58,7 @@ export class OrdersService {
     config: ConfigService,
     @Inject(PAYMENT_PROVIDER) private readonly gateway: PaymentGateway,
     private readonly settings: SettingsService,
+    private readonly cipher: PiiCipher,
   ) {
     this.simulateAllowed = gateway.name === 'FAKE' && config.get('NODE_ENV') !== 'production';
   }
@@ -172,6 +174,7 @@ export class OrdersService {
       include: { payment: { select: { id: true } }, user: true, raffle: { select: { title: true } } },
     });
     if (!o || o.status !== 'PENDING' || o.payment) return;
+    const user = this.cipher.decryptUser(o.user);
 
     let charge;
     try {
@@ -181,11 +184,11 @@ export class OrdersService {
         description: `${o.quantity} número(s) - ${o.raffle.title}`,
         expiresAt: o.expiresAt,
         buyer: {
-          userId: o.user.id,
-          name: o.user.name,
-          phone: o.user.phone,
-          cpf: o.user.cpf,
-          gatewayCustomerId: o.user.gatewayCustomerId,
+          userId: user.id,
+          name: user.name,
+          phone: user.phone,
+          cpf: user.cpf,
+          gatewayCustomerId: user.gatewayCustomerId,
         },
       });
     } catch (e) {
@@ -407,6 +410,7 @@ export class OrdersService {
     });
     if (!o) throw new NotFoundException('Pedido não encontrado');
     const pending = o.status === 'PENDING';
+    const user = this.cipher.decryptUser(o.user);
     return {
       id: o.id,
       status: o.status,
@@ -422,9 +426,9 @@ export class OrdersService {
       numbers: o.numbers.map((n) => n.number),
       // Quem tem o link do pedido vê só o primeiro nome e dados mascarados (como no Wesley).
       buyer: {
-        name: o.user.name.split(' ')[0],
-        phone: o.user.phone ? maskPhone(o.user.phone) : null,
-        cpf: o.user.cpf ? o.user.cpf.slice(0, 3) + '.***.***-**' : null,
+        name: user.name.split(' ')[0],
+        phone: user.phone ? maskPhone(user.phone) : null,
+        cpf: user.cpf ? user.cpf.slice(0, 3) + '.***.***-**' : null,
       },
       raffle: {
         slug: o.raffle.slug,

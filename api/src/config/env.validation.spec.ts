@@ -3,6 +3,8 @@ import { validateEnv } from './env.validation.js';
 const base = {
   DATABASE_URL: 'postgresql://u:p@db:5432/x',
   JWT_SECRET: 'a'.repeat(32),
+  PII_KEYS: `1:${'k'.repeat(43)}=`,
+  PII_INDEX_KEY: `${'i'.repeat(43)}=`,
   S3_ENDPOINT: 'http://minio:9000',
   S3_PUBLIC_URL: 'http://localhost:9000/rifas',
   S3_BUCKET: 'rifas',

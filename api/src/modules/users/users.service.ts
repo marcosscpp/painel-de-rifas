@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client.js';
 import { ageOn, normalizeCpf, normalizePhone, normalizeZip, parseDateOnly } from '../../common/utils/br.js';
+import { PiiCipher } from '../../infra/crypto/pii-cipher.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import type { BuyerDto, UpdateProfileDto } from './dto/buyer.dto.js';
@@ -13,6 +14,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
+    private readonly cipher: PiiCipher,
   ) {}
 
   // Cadastro do comprador no checkout. O celular identifica a pessoa (sem senha) e o CPF
@@ -47,17 +49,25 @@ export class UsersService {
       : {};
     if (input.address && !address.zipCode) throw new BadRequestException('CEP inválido');
 
-    const existing = await this.prisma.user.findUnique({ where: { phone } });
+    const phoneHash = this.cipher.index('phone', phone);
+    const cpfHash = this.cipher.index('cpf', cpf);
+    const existing = await this.prisma.user.findUnique({
+      where: { phoneHash },
+      select: { id: true, role: true, cpfHash: true },
+    });
     if (existing?.role === 'ADMIN') throw new ConflictException('Celular indisponível');
-    if (existing?.cpf && existing.cpf !== cpf) {
+    if (existing?.cpfHash && existing.cpfHash !== cpfHash) {
       throw new ConflictException('Este celular já está cadastrado com outro CPF');
     }
 
-    const cpfOwner = await this.prisma.user.findUnique({ where: { cpf }, select: { id: true } });
+    const cpfOwner = await this.prisma.user.findUnique({ where: { cpfHash }, select: { id: true } });
     if (cpfOwner && cpfOwner.id !== existing?.id) {
       throw new ConflictException('Este CPF já está cadastrado com outro celular');
     }
-    const emailOwner = await this.prisma.user.findUnique({ where: { email: input.email }, select: { id: true } });
+    const emailOwner = await this.prisma.user.findUnique({
+      where: { emailHash: this.cipher.index('email', input.email) },
+      select: { id: true },
+    });
     if (emailOwner && emailOwner.id !== existing?.id) {
       throw new ConflictException('Este e-mail já está em outro cadastro');
     }
@@ -72,15 +82,16 @@ export class UsersService {
     };
     const upsert = () =>
       this.prisma.user.upsert({
-        where: { phone },
-        create: { phone, role: 'BUYER', ...profile },
-        update: profile,
+        where: { phoneHash },
+        create: { role: 'BUYER', ...this.cipher.encryptUser({ phone, ...profile }) },
+        update: this.cipher.encryptUser(profile),
       });
     // Duas compras simultâneas do mesmo celular novo: a segunda bate na chave única e repete como update.
-    return upsert().catch((e: unknown) => {
+    const user = await upsert().catch((e: unknown) => {
       if (isUniqueViolation(e)) return upsert();
       throw e;
     });
+    return this.cipher.decryptUser(user);
   }
 
   // "Já comprei antes" / "Meus números": celular e CPF precisam ser do mesmo cadastro.
@@ -88,11 +99,12 @@ export class UsersService {
   async findBuyer(rawPhone: string, rawCpf: string) {
     const phone = normalizePhone(rawPhone);
     const cpf = normalizeCpf(rawCpf);
-    const user = phone && cpf ? await this.prisma.user.findUnique({ where: { phone } }) : null;
-    if (!user || user.role !== 'BUYER' || user.cpf !== cpf) {
+    const user =
+      phone && cpf ? await this.prisma.user.findUnique({ where: { phoneHash: this.cipher.index('phone', phone) } }) : null;
+    if (!user || user.role !== 'BUYER' || !cpf || user.cpfHash !== this.cipher.index('cpf', cpf)) {
       throw new NotFoundException('Não encontramos cadastro com esse celular e CPF');
     }
-    return user;
+    return this.cipher.decryptUser(user);
   }
 
   // Cadastro pela tela "Cadastrar": só cria. Quem já tem cadastro entra com celular + CPF,
@@ -101,7 +113,12 @@ export class UsersService {
     const phone = normalizePhone(input.phone);
     const cpf = normalizeCpf(input.cpf);
     const taken = await this.prisma.user.findFirst({
-      where: { OR: [...(phone ? [{ phone }] : []), ...(cpf ? [{ cpf }] : [])] },
+      where: {
+        OR: [
+          ...(phone ? [{ phoneHash: this.cipher.index('phone', phone) }] : []),
+          ...(cpf ? [{ cpfHash: this.cipher.index('cpf', cpf) }] : []),
+        ],
+      },
       select: { id: true },
     });
     if (taken) throw new ConflictException('Você já tem cadastro. Entre com seu celular e CPF.');
@@ -111,7 +128,10 @@ export class UsersService {
   // "Meus dados": celular, CPF e nascimento identificam a pessoa e não mudam por aqui.
   async updateProfile(userId: string, input: UpdateProfileDto) {
     if (input.email) {
-      const owner = await this.prisma.user.findUnique({ where: { email: input.email }, select: { id: true } });
+      const owner = await this.prisma.user.findUnique({
+        where: { emailHash: this.cipher.index('email', input.email) },
+        select: { id: true },
+      });
       if (owner && owner.id !== userId) throw new ConflictException('Este e-mail já está em outro cadastro');
     }
     let address = {};
@@ -131,18 +151,19 @@ export class UsersService {
         reference: input.address.reference ?? null,
       };
     }
-    return this.prisma.user.update({
+    const user = await this.prisma.user.update({
       where: { id: userId },
-      data: {
+      data: this.cipher.encryptUser({
         ...(input.name !== undefined && { name: input.name }),
         ...(input.socialName !== undefined && { socialName: input.socialName || null }),
         ...(input.email !== undefined && { email: input.email }),
         ...address,
-      },
+      }),
     });
+    return this.cipher.decryptUser(user);
   }
 
   async getBuyer(id: string) {
-    return this.prisma.user.findUnique({ where: { id } });
+    return this.cipher.decryptUser(await this.prisma.user.findUnique({ where: { id } }));
   }
 }

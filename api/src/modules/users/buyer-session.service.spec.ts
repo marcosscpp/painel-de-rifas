@@ -1,4 +1,4 @@
-import { makeConfig, makePrisma, type PrismaMock } from '../../../test/helpers/mocks.js';
+import { makeCipher, makeConfig, makePrisma, type PrismaMock } from '../../../test/helpers/mocks.js';
 import { BUYER_COOKIE, BuyerSessionService } from './buyer-session.service.js';
 
 describe('BuyerSessionService', () => {
@@ -10,7 +10,7 @@ describe('BuyerSessionService', () => {
   beforeEach(() => {
     prisma = makePrisma();
     jwt = { signAsync: vi.fn().mockResolvedValue('tok'), verifyAsync: vi.fn().mockResolvedValue({ sub: 'u1', role: 'BUYER', v: 2 }) };
-    session = new BuyerSessionService(jwt as never, prisma as never, makeConfig({ NODE_ENV: 'production', BUYER_SESSION_DAYS: 90 }) as never);
+    session = new BuyerSessionService(jwt as never, prisma as never, makeCipher(), makeConfig({ NODE_ENV: 'production', BUYER_SESSION_DAYS: 90 }) as never);
     prisma.user.findUnique.mockResolvedValue(user);
   });
 

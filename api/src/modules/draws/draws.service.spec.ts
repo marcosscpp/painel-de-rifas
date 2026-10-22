@@ -1,5 +1,5 @@
 import { ConflictException } from '@nestjs/common';
-import { makePrisma, type PrismaMock } from '../../../test/helpers/mocks.js';
+import { makeCipher, makePrisma, type PrismaMock } from '../../../test/helpers/mocks.js';
 import { DrawsService, publicWinnerName } from './draws.service.js';
 
 const dto = { contest: '5912', prizes: ['12345', '67890', '24680', '13579', '00042'] };
@@ -13,7 +13,7 @@ describe('DrawsService', () => {
     prisma = Object.assign(base, {
       raffleNumber: { findMany: vi.fn().mockResolvedValue([]), findFirst: vi.fn().mockResolvedValue(null), findUnique: vi.fn() },
     });
-    service = new DrawsService(prisma as never);
+    service = new DrawsService(prisma as never, makeCipher());
     prisma.raffle.findUnique.mockResolvedValue({ id: 'r1', status: 'CLOSED', totalNumbers: 10_000, title: 'Onix' });
   });
 

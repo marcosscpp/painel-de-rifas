@@ -67,6 +67,9 @@ services:
       CORS_ORIGINS: http://localhost:5173
       NODE_ENV: development
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-0123456789abcdef0123456789}
+      # Chaves só de desenvolvimento para os dados pessoais (produção gera as suas).
+      PII_KEYS: ${PII_KEYS:-1:ceCtKm26dFiCMK2WTm8ph4z9XwLfNLxD503Q83ErCT4=}
+      PII_INDEX_KEY: ${PII_INDEX_KEY:-gUgdWK3ZxjVt4XhHam1+pU14U5Z3nxxygqKAcED/+qc=}
       # Admin de desenvolvimento (npm run admin:create dentro do container)
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@rifas.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin-dev-123456}

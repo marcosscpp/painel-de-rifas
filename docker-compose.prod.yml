@@ -98,6 +98,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       CORS_ORIGINS: https://${DOMAIN:?}
       JWT_SECRET: ${JWT_SECRET:?}
+      PII_KEYS: ${PII_KEYS:?}
+      PII_INDEX_KEY: ${PII_INDEX_KEY:?}
       SESSION_TTL_MINUTES: ${SESSION_TTL_MINUTES:-480}
       S3_ENDPOINT: http://minio:9000
       S3_PUBLIC_URL: https://img.${DOMAIN}/${S3_BUCKET:-rifas}

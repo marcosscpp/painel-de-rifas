@@ -1,5 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { makePrisma, type PrismaMock } from '../../../test/helpers/mocks.js';
+import { makeCipher, makePrisma, type PrismaMock } from '../../../test/helpers/mocks.js';
 import { csvCell, OrdersAdminService } from './orders.admin.service.js';
 
 describe('OrdersAdminService', () => {
@@ -10,7 +10,7 @@ describe('OrdersAdminService', () => {
   beforeEach(() => {
     prisma = makePrisma();
     orders = { release: vi.fn(), listForBuyer: vi.fn().mockResolvedValue([]) };
-    service = new OrdersAdminService(prisma as never, orders as never, { urls: () => null } as never);
+    service = new OrdersAdminService(prisma as never, orders as never, { urls: () => null } as never, makeCipher());
     prisma.order.findMany.mockResolvedValue([]);
     prisma.order.count.mockResolvedValue(0);
   });
@@ -21,12 +21,20 @@ describe('OrdersAdminService', () => {
     expect(prisma.order.findMany.mock.calls[0][0].where).toMatchObject({ id });
   });
 
-  it('busca por nome, e-mail, celular e CPF', async () => {
-    await service.list({ q: '(11) 98765', page: 1, pageSize: 20 });
-    const or = prisma.order.findMany.mock.calls[0][0].where.user.OR;
-    expect(or).toEqual(
-      expect.arrayContaining([{ phone: { contains: '1198765' } }, { cpf: { contains: '1198765' } }]),
-    );
+  it('busca por parte do nome e por celular, CPF e e-mail completos (pelo hash)', async () => {
+    const cipher = makeCipher();
+    const orOf = async (q: string) => {
+      prisma.order.findMany.mockClear();
+      await service.list({ q, page: 1, pageSize: 20 });
+      return prisma.order.findMany.mock.calls[0][0].where.user.OR;
+    };
+    expect(await orOf('(11) 98765-4321')).toEqual([
+      { name: { contains: '(11) 98765-4321', mode: 'insensitive' } },
+      { phoneHash: cipher.index('phone', '11987654321') },
+    ]);
+    expect(await orOf('529.982.247-25')).toContainEqual({ cpfHash: cipher.index('cpf', '52998224725') });
+    expect(await orOf(' Maria@X.com ')).toContainEqual({ emailHash: cipher.index('email', 'maria@x.com') });
+    expect(await orOf('Maria')).toEqual([{ name: { contains: 'Maria', mode: 'insensitive' } }]);
   });
 
   it('filtro de reembolso pendente', async () => {

@@ -1,7 +1,10 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { makePrisma, makeSettings, type PrismaMock, uniqueViolation } from '../../../test/helpers/mocks.js';
+import { makeCipher, makePrisma, makeSettings, type PrismaMock, uniqueViolation } from '../../../test/helpers/mocks.js';
 import type { BuyerDto } from './dto/buyer.dto.js';
 import { UsersService } from './users.service.js';
+
+const cipher = makeCipher();
+const enc = expect.stringMatching(/^enc:v1:/);
 
 const buyer = (over: Partial<BuyerDto> = {}): BuyerDto => ({
   name: 'Maria Souza',
@@ -19,25 +22,41 @@ describe('UsersService', () => {
 
   beforeEach(() => {
     prisma = makePrisma();
-    service = new UsersService(prisma as never, makeSettings() as never);
+    service = new UsersService(prisma as never, makeSettings() as never, cipher);
     prisma.user.findUnique.mockResolvedValue(null);
     prisma.user.upsert.mockResolvedValue({ id: 'u1' });
   });
 
   describe('upsertBuyer', () => {
-    it('normaliza celular e CPF e grava o cadastro completo', async () => {
+    it('normaliza celular e CPF e grava o cadastro completo, com dados pessoais cifrados', async () => {
       await service.upsertBuyer(buyer({ socialName: 'Mari' }));
       const call = prisma.user.upsert.mock.calls[0][0];
-      expect(call.where).toEqual({ phone: '11987654321' });
+      expect(call.where).toEqual({ phoneHash: cipher.index('phone', '11987654321') });
       expect(call.create).toMatchObject({
-        phone: '11987654321',
         role: 'BUYER',
         name: 'Maria Souza',
         socialName: 'Mari',
+        phone: enc,
+        cpf: enc,
+        email: enc,
+        birthDate: enc,
+        phoneHash: cipher.index('phone', '11987654321'),
+        cpfHash: cipher.index('cpf', '52998224725'),
+        emailHash: cipher.index('email', 'maria@x.com'),
+      });
+      expect(cipher.decryptUser(call.create)).toMatchObject({
+        phone: '11987654321',
         cpf: '52998224725',
         email: 'maria@x.com',
         birthDate: new Date(Date.UTC(1990, 4, 10)),
       });
+    });
+
+    it('devolve o cadastro aberto para quem chamou', async () => {
+      prisma.user.upsert.mockImplementation(({ create }: { create: Record<string, unknown> }) =>
+        Promise.resolve({ id: 'u1', ...create }),
+      );
+      await expect(service.upsertBuyer(buyer())).resolves.toMatchObject({ id: 'u1', cpf: '52998224725' });
     });
 
     it('grava endereço quando informado', async () => {
@@ -46,12 +65,13 @@ describe('UsersService', () => {
           address: { zipCode: '01310-100', street: 'Av. Paulista', number: '1000', district: 'Bela Vista', city: 'São Paulo', state: 'SP' },
         }),
       );
-      expect(prisma.user.upsert.mock.calls[0][0].update).toMatchObject({
+      const update = prisma.user.upsert.mock.calls[0][0].update;
+      expect(update).toMatchObject({ zipCode: enc, street: enc, city: enc, state: enc, complement: null });
+      expect(cipher.decryptUser(update)).toMatchObject({
         zipCode: '01310100',
         street: 'Av. Paulista',
         streetNumber: '1000',
         state: 'SP',
-        complement: null,
       });
     });
 
@@ -77,7 +97,7 @@ describe('UsersService', () => {
     });
 
     it('celular já ligado a outro CPF não aceita troca (protege o cadastro de quem é dono)', async () => {
-      prisma.user.findUnique.mockResolvedValueOnce({ id: 'u1', role: 'BUYER', cpf: '11144477735' });
+      prisma.user.findUnique.mockResolvedValueOnce({ id: 'u1', role: 'BUYER', cpfHash: cipher.index('cpf', '11144477735') });
       await expect(service.upsertBuyer(buyer())).rejects.toThrow('outro CPF');
       expect(prisma.user.upsert).not.toHaveBeenCalled();
     });
@@ -99,17 +119,26 @@ describe('UsersService', () => {
 
   describe('findBuyer', () => {
     it('acha o comprador quando celular e CPF batem', async () => {
-      prisma.user.findUnique.mockResolvedValueOnce({ id: 'u1', role: 'BUYER', cpf: '52998224725' });
-      await expect(service.findBuyer('(11) 98765-4321', '529.982.247-25')).resolves.toMatchObject({ id: 'u1' });
+      prisma.user.findUnique.mockResolvedValueOnce({
+        id: 'u1',
+        role: 'BUYER',
+        cpf: cipher.encrypt('52998224725'),
+        cpfHash: cipher.index('cpf', '52998224725'),
+      });
+      await expect(service.findBuyer('(11) 98765-4321', '529.982.247-25')).resolves.toMatchObject({
+        id: 'u1',
+        cpf: '52998224725',
+      });
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { phoneHash: cipher.index('phone', '11987654321') } });
     });
 
     it('mesma resposta para "não existe", "CPF errado" e admin (não revela quem tem cadastro)', async () => {
       const errs = [];
       prisma.user.findUnique.mockResolvedValueOnce(null);
       errs.push(await service.findBuyer('11987654321', '52998224725').catch((e: unknown) => e));
-      prisma.user.findUnique.mockResolvedValueOnce({ id: 'u1', role: 'BUYER', cpf: '11144477735' });
+      prisma.user.findUnique.mockResolvedValueOnce({ id: 'u1', role: 'BUYER', cpfHash: cipher.index('cpf', '11144477735') });
       errs.push(await service.findBuyer('11987654321', '52998224725').catch((e: unknown) => e));
-      prisma.user.findUnique.mockResolvedValueOnce({ id: 'a1', role: 'ADMIN', cpf: '52998224725' });
+      prisma.user.findUnique.mockResolvedValueOnce({ id: 'a1', role: 'ADMIN', cpfHash: cipher.index('cpf', '52998224725') });
       errs.push(await service.findBuyer('11987654321', '52998224725').catch((e: unknown) => e));
       for (const e of errs) {
         expect(e).toBeInstanceOf(NotFoundException);
@@ -122,7 +151,9 @@ describe('UsersService', () => {
     it('cria e devolve o cadastro quando celular e CPF são novos', async () => {
       prisma.user.findFirst.mockResolvedValue(null);
       await expect(service.registerBuyer(buyer())).resolves.toEqual({ id: 'u1' });
-      expect(prisma.user.findFirst.mock.calls[0][0].where).toEqual({ OR: [{ phone: '11987654321' }, { cpf: '52998224725' }] });
+      expect(prisma.user.findFirst.mock.calls[0][0].where).toEqual({
+        OR: [{ phoneHash: cipher.index('phone', '11987654321') }, { cpfHash: cipher.index('cpf', '52998224725') }],
+      });
     });
 
     it('quem já tem cadastro é mandado entrar (não sobrescreve dados de ninguém)', async () => {
@@ -141,9 +172,11 @@ describe('UsersService', () => {
       });
       const call = prisma.user.update.mock.calls[0][0];
       expect(call.where).toEqual({ id: 'u1' });
-      expect(call.data).toMatchObject({ name: 'Maria S Souza', socialName: null, zipCode: '01310100', streetNumber: '1000' });
+      expect(call.data).toMatchObject({ name: 'Maria S Souza', socialName: null, zipCode: enc, streetNumber: enc });
+      expect(cipher.decryptUser(call.data)).toMatchObject({ zipCode: '01310100', streetNumber: '1000' });
       expect(call.data).not.toHaveProperty('phone');
       expect(call.data).not.toHaveProperty('cpf');
+      expect(call.data).not.toHaveProperty('phoneHash');
     });
 
     it('address null apaga o endereço', async () => {

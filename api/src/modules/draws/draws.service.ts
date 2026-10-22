@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { maskPhone } from '../../common/utils/br.js';
+import { PiiCipher } from '../../infra/crypto/pii-cipher.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import { candidates, type DrawOutcome, explain, resolveWinner } from './draw.rules.js';
 import type { DrawDto } from './dto/draw.dto.js';
@@ -19,7 +20,10 @@ const publicWinnerLabel = (w: { name: string; city: string | null; state: string
 
 @Injectable()
 export class DrawsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cipher: PiiCipher,
+  ) {}
 
   // Prévia: calcula o ganhador sem gravar nada (o admin confere antes de publicar).
   async preview(raffleId: string, dto: DrawDto) {
@@ -106,7 +110,7 @@ export class DrawsService {
       select: { orderId: true, order: { select: { user: { select: { name: true, phone: true, city: true, state: true } } } } },
     });
     if (!row?.orderId || !row.order) return null;
-    const u = row.order.user;
+    const u = this.cipher.decryptUser(row.order.user);
     return { orderId: row.orderId, name: u.name, phone: u.phone, city: u.city, state: u.state };
   }
 

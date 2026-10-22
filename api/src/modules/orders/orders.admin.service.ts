@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client.js';
-import { onlyDigits } from '../../common/utils/br.js';
+import { normalizeCpf, normalizePhone } from '../../common/utils/br.js';
+import { PiiCipher } from '../../infra/crypto/pii-cipher.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import { UploadsService } from '../uploads/uploads.service.js';
 import type { AdminBuyersQuery, AdminOrdersQuery } from './dto/admin-orders.dto.js';
@@ -9,14 +10,17 @@ import { OrdersService } from './orders.service.js';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EXPORT_LIMIT = 50_000;
 
-// Busca livre: id do pedido, nome, e-mail, ou (se tiver dígitos) celular/CPF.
-function buyerSearch(q: string): Prisma.UserWhereInput {
-  const digits = onlyDigits(q);
+// Busca livre: id do pedido, parte do nome, ou e-mail, celular e CPF completos.
+// Esses três são cifrados no banco: a busca compara o hash do valor inteiro, sem trecho.
+function buyerSearch(cipher: PiiCipher, q: string): Prisma.UserWhereInput {
+  const phone = normalizePhone(q);
+  const cpf = normalizeCpf(q);
   return {
     OR: [
       { name: { contains: q, mode: 'insensitive' } },
-      { email: { contains: q.toLowerCase() } },
-      ...(digits.length >= 4 ? [{ phone: { contains: digits } }, { cpf: { contains: digits } }] : []),
+      ...(q.includes('@') ? [{ emailHash: cipher.index('email', q.trim().toLowerCase()) }] : []),
+      ...(phone ? [{ phoneHash: cipher.index('phone', phone) }] : []),
+      ...(cpf ? [{ cpfHash: cipher.index('cpf', cpf) }] : []),
     ],
   };
 }
@@ -34,6 +38,7 @@ export class OrdersAdminService {
     private readonly prisma: PrismaService,
     private readonly orders: OrdersService,
     private readonly uploads: UploadsService,
+    private readonly cipher: PiiCipher,
   ) {}
 
   private where(q: Partial<AdminOrdersQuery>): Prisma.OrderWhereInput {
@@ -41,7 +46,7 @@ export class OrdersAdminService {
       status: q.status,
       raffleId: q.raffleId,
       ...(q.refundPending && { refundRequired: true, refundedAt: null }),
-      ...(q.q && (UUID.test(q.q) ? { id: q.q } : { user: buyerSearch(q.q) })),
+      ...(q.q && (UUID.test(q.q) ? { id: q.q } : { user: buyerSearch(this.cipher, q.q) })),
     };
   }
 
@@ -73,7 +78,7 @@ export class OrdersAdminService {
         paidAt: o.paidAt,
         refundRequired: o.refundRequired,
         refundedAt: o.refundedAt,
-        buyer: o.user,
+        buyer: this.cipher.decryptUser(o.user),
         raffle: o.raffle,
       })),
     };
@@ -90,7 +95,7 @@ export class OrdersAdminService {
       },
     });
     if (!o) throw new NotFoundException('Pedido não encontrado');
-    const { user: u } = o;
+    const u = this.cipher.decryptUser(o.user);
     return {
       id: o.id,
       status: o.status,
@@ -157,16 +162,17 @@ export class OrdersAdminService {
     });
     const header = ['pedido', 'criado_em', 'status', 'rifa', 'comprador', 'celular', 'cpf', 'email', 'quantidade', 'subtotal', 'taxa', 'total', 'pago_em', 'reembolso', 'numeros'];
     const money = (c: number) => (c / 100).toFixed(2).replace('.', ',');
-    const lines = rows.map((o) =>
-      [
+    const lines = rows.map((o) => {
+      const u = this.cipher.decryptUser(o.user);
+      return [
         o.id,
         o.createdAt,
         o.status,
         o.raffle.title,
-        o.user.name,
-        o.user.phone,
-        o.user.cpf,
-        o.user.email,
+        u.name,
+        u.phone,
+        u.cpf,
+        u.email,
         o.quantity,
         money(o.subtotalCents),
         money(o.feeCents),
@@ -176,15 +182,15 @@ export class OrdersAdminService {
         o.numbers.map((n) => n.number).join(' '),
       ]
         .map(csvCell)
-        .join(';'),
-    );
+        .join(';');
+    });
     return '﻿' + [header.join(';'), ...lines].join('\r\n');
   }
 
   // ─── Compradores ───────────────────────────────────────────────────────────
 
   async buyers(q: AdminBuyersQuery) {
-    const where: Prisma.UserWhereInput = { role: 'BUYER', ...(q.q && buyerSearch(q.q)) };
+    const where: Prisma.UserWhereInput = { role: 'BUYER', ...(q.q && buyerSearch(this.cipher, q.q)) };
     const [users, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
         where,
@@ -212,7 +218,7 @@ export class OrdersAdminService {
       items: users.map((u) => {
         const s = byUser.get(u.id);
         return {
-          ...u,
+          ...this.cipher.decryptUser(u),
           paidOrders: s?._count._all ?? 0,
           paidNumbers: s?._sum.quantity ?? 0,
           spentCents: s?._sum.totalCents ?? 0,
@@ -222,7 +228,7 @@ export class OrdersAdminService {
   }
 
   async buyer(id: string) {
-    const u = await this.prisma.user.findFirst({ where: { id, role: 'BUYER' } });
+    const u = this.cipher.decryptUser(await this.prisma.user.findFirst({ where: { id, role: 'BUYER' } }));
     if (!u) throw new NotFoundException('Comprador não encontrado');
     return {
       id: u.id,

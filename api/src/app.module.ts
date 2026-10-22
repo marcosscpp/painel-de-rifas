@@ -8,6 +8,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 import { OriginCheckMiddleware } from './common/middleware/origin-check.middleware.js';
 import { validateEnv } from './config/env.validation.js';
+import { PiiModule } from './infra/crypto/pii.module.js';
 import { PrismaModule } from './infra/prisma/prisma.module.js';
 import { StorageModule } from './infra/storage/storage.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
@@ -30,6 +31,7 @@ import { UsersModule } from './modules/users/users.module.js';
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
     ScheduleModule.forRoot(),
     PrismaModule,
+    PiiModule,
     StorageModule,
 
     HealthModule,

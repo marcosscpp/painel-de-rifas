@@ -44,6 +44,17 @@ export class EnvVars {
   @MinLength(32, { message: 'JWT_SECRET precisa de pelo menos 32 caracteres' })
   JWT_SECRET: string;
 
+  // Chaves dos dados pessoais (CPF, celular, e-mail, nascimento, endereço). Cada chave tem
+  // 32 bytes em base64 (openssl rand -base64 32). Formato "1:<chave>,2:<chave>": grava com a
+  // versão mais alta e lê todas; ao subir, a API recifra o que estiver com chave antiga.
+  // Perder as chaves = perder os dados. Guardar fora do servidor.
+  @IsString()
+  PII_KEYS: string;
+
+  // Chave do HMAC usado para buscar por CPF/celular/e-mail. Não muda depois de definida.
+  @IsString()
+  PII_INDEX_KEY: string;
+
   // Duração da sessão do admin, em minutos.
   @Transform(toInt)
   @IsInt()

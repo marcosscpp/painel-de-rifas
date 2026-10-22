@@ -3,7 +3,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { makeConfig, makePrisma, type PrismaMock, sqlOf, uniqueViolation , makeSettings } from '../../../test/helpers/mocks.js';
+import { makeCipher, makeConfig, makePrisma, type PrismaMock, sqlOf, uniqueViolation , makeSettings } from '../../../test/helpers/mocks.js';
 import { RafflesPresenter } from '../raffles/raffles.presenter.js';
 import { NumbersUnavailableException, OrdersService } from './orders.service.js';
 import type { CreateOrderDto } from './dto/create-order.dto.js';
@@ -75,6 +75,7 @@ describe('OrdersService', () => {
       makeConfig({ RESERVATION_MINUTES: 15, PIX_FEE_CENTS: 199 }) as never,
       gateway as never,
       makeSettings() as never,
+      makeCipher(),
     );
 
     // Padrão: chave nova, rifa ativa, pedido criado, contador atualizado.

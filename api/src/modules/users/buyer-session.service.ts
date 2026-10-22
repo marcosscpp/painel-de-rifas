@@ -5,6 +5,7 @@ import type { CookieOptions, Request, Response } from 'express';
 import type { JwtPayload } from '../../common/types/auth-user.js';
 import { maskPhone } from '../../common/utils/br.js';
 import type { User } from '../../generated/prisma/client.js';
+import { type DecryptedUser, PiiCipher } from '../../infra/crypto/pii-cipher.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 
 export const BUYER_COOKIE = 'rifas_buyer';
@@ -21,6 +22,7 @@ export class BuyerSessionService {
   constructor(
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
+    private readonly cipher: PiiCipher,
     config: ConfigService,
   ) {
     this.ttlSeconds = (config.get<number>('BUYER_SESSION_DAYS') ?? 90) * 86_400;
@@ -44,7 +46,7 @@ export class BuyerSessionService {
   }
 
   // Comprador da sessão, ou null se não houver/expirou/foi derrubada.
-  async read(req: Request): Promise<User | null> {
+  async read(req: Request): Promise<DecryptedUser<User> | null> {
     const token = req.cookies?.[BUYER_COOKIE] as string | undefined;
     if (!token) return null;
     let payload: JwtPayload;
@@ -56,7 +58,7 @@ export class BuyerSessionService {
     if (payload.role !== 'BUYER') return null;
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user || user.role !== 'BUYER' || user.sessionVersion !== payload.v) return null;
-    return user;
+    return this.cipher.decryptUser(user);
   }
 
   // O que a tela pode mostrar: primeiro nome e celular mascarado.
@@ -68,7 +70,7 @@ export class BuyerSessionService {
   }
 
   // "Meus dados": tudo que a pessoa cadastrou, com CPF e celular mascarados.
-  fullProfile(user: User) {
+  fullProfile(user: DecryptedUser<User>) {
     return {
       name: user.name,
       socialName: user.socialName,

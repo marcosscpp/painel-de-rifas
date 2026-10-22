@@ -1,5 +1,5 @@
 import { UnauthorizedException } from '@nestjs/common';
-import { makePrisma, type PrismaMock } from '../../../test/helpers/mocks.js';
+import { makeCipher, makePrisma, type PrismaMock } from '../../../test/helpers/mocks.js';
 import { hashPassword } from '../../common/utils/password.js';
 import { AuthService } from './auth.service.js';
 
@@ -16,7 +16,7 @@ describe('AuthService', () => {
   beforeEach(() => {
     prisma = makePrisma();
     jwt = { signAsync: vi.fn().mockResolvedValue('token') };
-    service = new AuthService(prisma as never, jwt as never);
+    service = new AuthService(prisma as never, jwt as never, makeCipher());
   });
 
   const admin = (over: Record<string, unknown> = {}) => ({
@@ -30,8 +30,10 @@ describe('AuthService', () => {
   });
 
   it('login certo devolve token com a versão da sessão e não expõe o hash', async () => {
-    prisma.user.findUnique.mockResolvedValue(admin());
+    const cipher = makeCipher();
+    prisma.user.findUnique.mockResolvedValue(admin({ email: cipher.encrypt('admin@x.com') }));
     const out = await service.login('admin@x.com', 'senha-correta-123');
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { emailHash: cipher.index('email', 'admin@x.com') } });
     expect(jwt.signAsync).toHaveBeenCalledWith({ sub: 'a1', role: 'ADMIN', v: 3 });
     expect(out).toEqual({ token: 'token', user: { id: 'a1', name: 'Admin', email: 'admin@x.com', role: 'ADMIN' } });
   });

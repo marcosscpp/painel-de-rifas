@@ -66,7 +66,7 @@ export function AdminBuyersPage() {
       <Card className="mb-4 p-4">
         <Input
           aria-label="Buscar"
-          placeholder="Nome, celular, CPF ou e-mail"
+          placeholder="Nome, ou celular, CPF ou e-mail completo"
           leftIcon={<MagnifyingGlassIcon className="size-4" />}
           value={search}
           onChange={(e) => {

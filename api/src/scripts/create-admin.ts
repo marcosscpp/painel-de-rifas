@@ -6,6 +6,7 @@ import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client.js';
 import { hashPassword } from '../common/utils/password.js';
+import { PiiCipher } from '../infra/crypto/pii-cipher.js';
 
 const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
 const name = process.env.ADMIN_NAME?.trim() || 'Administrador';
@@ -24,12 +25,14 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
 });
 
+// O e-mail é gravado cifrado, como os dados dos compradores; o login busca pelo hash.
+const cipher = new PiiCipher(process.env.PII_KEYS ?? '', process.env.PII_INDEX_KEY ?? '');
 const passwordHash = await hashPassword(password);
-const user = await prisma.user.upsert({
-  where: { email },
-  create: { email, name, role: 'ADMIN', passwordHash },
+await prisma.user.upsert({
+  where: { emailHash: cipher.index('email', email) },
+  create: { ...cipher.encryptUser({ email }), name, role: 'ADMIN', passwordHash },
   // Trocar a senha também derruba as sessões abertas.
   update: { name, role: 'ADMIN', passwordHash, sessionVersion: { increment: 1 } },
 });
-console.log(`Admin pronto: ${user.email}`);
+console.log(`Admin pronto: ${email}`);
 await prisma.$disconnect();

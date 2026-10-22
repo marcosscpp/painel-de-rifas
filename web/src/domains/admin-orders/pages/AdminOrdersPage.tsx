@@ -114,7 +114,7 @@ export function AdminOrdersPage() {
       <Card className="mb-4 grid gap-3 p-4 md:grid-cols-[1.5fr_1fr_1fr_auto]">
         <Input
           aria-label="Buscar"
-          placeholder="Nome, celular, CPF, e-mail ou nº do pedido"
+          placeholder="Nome, nº do pedido, ou celular, CPF ou e-mail completo"
           leftIcon={<MagnifyingGlassIcon className="size-4" />}
           value={search}
           onChange={(e) => reset(setSearch)(e.target.value)}

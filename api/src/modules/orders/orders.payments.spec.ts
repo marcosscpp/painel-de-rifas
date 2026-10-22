@@ -1,5 +1,5 @@
 import { BadGatewayException, NotFoundException } from '@nestjs/common';
-import { makeConfig, makePrisma, type PrismaMock, sqlOf, uniqueViolation , makeSettings } from '../../../test/helpers/mocks.js';
+import { makeCipher, makeConfig, makePrisma, type PrismaMock, sqlOf, uniqueViolation , makeSettings } from '../../../test/helpers/mocks.js';
 import { GatewayError } from '../payments/payment-provider.js';
 import { RafflesPresenter } from '../raffles/raffles.presenter.js';
 import { OrdersService } from './orders.service.js';
@@ -35,6 +35,7 @@ function setup({ gatewayName = 'FAKE', env = 'development' } = {}) {
     makeConfig({ RESERVATION_MINUTES: 15, PIX_FEE_CENTS: 199, NODE_ENV: env }) as never,
     gateway as never,
     makeSettings() as never,
+    makeCipher(),
   );
   return { prisma, realtime, gateway, service };
 }

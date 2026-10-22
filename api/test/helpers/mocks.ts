@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import { PiiCipher } from '../../src/infra/crypto/pii-cipher.js';
 import { Prisma } from '../../src/generated/prisma/client.js';
 
 // Mock do PrismaService para testes unitários: cada método é um vi.fn().
@@ -74,3 +75,7 @@ export const makeSettings = (over: Record<string, unknown> = {}) => ({
   }),
   update: vi.fn(),
 });
+
+// Cifra de dados pessoais de verdade, com chaves fixas de teste.
+export const TEST_PII_KEY = Buffer.alloc(32, 1).toString('base64');
+export const makeCipher = (keys = `1:${TEST_PII_KEY}`) => new PiiCipher(keys, Buffer.alloc(32, 2).toString('base64'));
