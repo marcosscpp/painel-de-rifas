@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import type { CookieOptions, Request, Response } from 'express';
 import type { JwtPayload } from '../../common/types/auth-user.js';
 import { maskPhone } from '../../common/utils/br.js';
+import type { User } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 
 export const BUYER_COOKIE = 'rifas_buyer';
@@ -43,7 +44,7 @@ export class BuyerSessionService {
   }
 
   // Comprador da sessão, ou null se não houver/expirou/foi derrubada.
-  async read(req: Request): Promise<BuyerUser | null> {
+  async read(req: Request): Promise<User | null> {
     const token = req.cookies?.[BUYER_COOKIE] as string | undefined;
     if (!token) return null;
     let payload: JwtPayload;
@@ -63,6 +64,32 @@ export class BuyerSessionService {
     return {
       name: (user.socialName || user.name).split(' ')[0],
       phone: user.phone ? maskPhone(user.phone) : null,
+    };
+  }
+
+  // "Meus dados": tudo que a pessoa cadastrou, com CPF e celular mascarados.
+  fullProfile(user: User) {
+    return {
+      name: user.name,
+      socialName: user.socialName,
+      firstName: (user.socialName || user.name).split(' ')[0],
+      email: user.email,
+      phone: user.phone ? maskPhone(user.phone) : null,
+      cpf: user.cpf ? `${user.cpf.slice(0, 3)}.***.***-**` : null,
+      birthDate: user.birthDate ? user.birthDate.toISOString().slice(0, 10) : null,
+      address: user.zipCode
+        ? {
+            zipCode: user.zipCode,
+            street: user.street,
+            number: user.streetNumber,
+            district: user.district,
+            city: user.city,
+            state: user.state,
+            complement: user.complement,
+            reference: user.reference,
+          }
+        : null,
+      createdAt: user.createdAt,
     };
   }
 }

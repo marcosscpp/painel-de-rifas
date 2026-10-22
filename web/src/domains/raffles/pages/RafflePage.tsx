@@ -15,6 +15,7 @@ import { useSocketEvent } from '@/shared/hooks/useSocket'
 import { ApiError } from '@/shared/lib/http'
 import { formatCents, formatDateTime, formatInt, padNumber } from '@/shared/utils/format'
 import { type BuyMode, BuyBox } from '../components/BuyBox'
+import { DrawResultCard } from '../components/DrawResultCard'
 import { NumberGrid } from '../components/NumberGrid'
 import { PrizeGallery } from '../components/PrizeGallery'
 import { useRaffle, useRaffleLive } from '../hooks/useRaffles'
@@ -42,8 +43,8 @@ export function RafflePage() {
   if (error instanceof ApiError && error.status === 404) {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <div className="flex size-16 items-center justify-center rounded-2xl border border-anzac-300 bg-anzac-50 text-anzac-600">
-          <TicketIcon weight="duotone" className="size-8" />
+        <div className="flex size-16 items-center justify-center rounded-2xl border border-anzac-300 bg-anzac-50 p-4 text-anzac-600">
+          <TicketIcon className="size-7" />
         </div>
         <p className="font-wide text-lg font-bold text-charcoal-900">Campanha não encontrada</p>
         <Link to="/">
@@ -99,7 +100,7 @@ export function RafflePage() {
                 <h1 className="font-wide text-2xl font-extrabold text-charcoal-900 sm:text-3xl">{raffle.title}</h1>
                 {raffle.drawDate && (
                   <p className="inline-flex items-center gap-1.5 text-sm text-slate-grey-600">
-                    <CalendarBlankIcon weight="duotone" className="size-4 text-watercourse-700" />
+                    <CalendarBlankIcon className="size-4 text-watercourse-700" />
                     Sorteio pela Loteria Federal em <strong className="text-charcoal-900">{formatDateTime(raffle.drawDate)}</strong>
                   </p>
                 )}
@@ -119,25 +120,12 @@ export function RafflePage() {
           </div>
         </Card>
 
-        {raffle.result && (
-          <div className="royal-gradient flex items-center gap-4 rounded-2xl border border-anzac-400 p-5 text-cream-50 shadow-md">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-anzac-400 text-charcoal-950">
-              <TrophyIcon weight="fill" className="size-7" />
-            </div>
-            <div>
-              <p className="text-xs font-bold tracking-wider text-anzac-300 uppercase">Resultado Oficial</p>
-              <p className="font-wide text-lg font-extrabold">
-                Bilhete premiado: <span className="font-mono text-anzac-300">{raffle.result.winningNumber}</span>
-              </p>
-              <p className="text-xs text-cream-100/80">Concurso {raffle.result.lotteryContest} da Loteria Federal</p>
-            </div>
-          </div>
-        )}
+        {raffle.result && <DrawResultCard result={raffle.result} totalNumbers={raffle.totalNumbers} />}
 
         {mode === 'pick' && raffle.status === 'ACTIVE' && (
           <Card className="p-5 sm:p-6">
             <div className="mb-4 flex items-center gap-2.5 border-b border-cream-200 pb-3">
-              <GridNineIcon weight="duotone" className="size-5 text-watercourse-700" />
+              <GridNineIcon className="size-5 text-watercourse-700" />
               <h2 className="font-wide text-lg font-bold text-charcoal-900">Escolha seus números</h2>
             </div>
             {lost.length > 0 && (
@@ -159,7 +147,7 @@ export function RafflePage() {
 
         <Card className="p-5 sm:p-6">
           <div className="mb-3 flex items-center gap-2.5 border-b border-cream-200 pb-3">
-            <FileTextIcon weight="duotone" className="size-5 text-watercourse-700" />
+            <FileTextIcon className="size-5 text-watercourse-700" />
             <h2 className="font-wide text-lg font-bold text-charcoal-900">Sobre a campanha</h2>
           </div>
           <p className="whitespace-pre-line text-sm leading-relaxed text-slate-grey-700">{raffle.description}</p>
@@ -168,7 +156,7 @@ export function RafflePage() {
         {raffle.prizes.length > 0 && (
           <Card className="flex flex-col gap-6 p-5 sm:p-6">
             <div className="flex items-center gap-2.5 border-b border-cream-200 pb-3">
-              <TrophyIcon weight="duotone" className="size-5 text-anzac-600" />
+              <TrophyIcon className="size-5 text-anzac-600" />
               <h2 className="font-wide text-lg font-bold text-charcoal-900">Prêmios da campanha</h2>
             </div>
             <div className="flex flex-col gap-6">
@@ -184,7 +172,7 @@ export function RafflePage() {
             <details className="group">
               <summary className="flex cursor-pointer list-none items-center justify-between font-wide text-base font-bold text-charcoal-900">
                 <span className="flex items-center gap-2.5">
-                  <ScalesIcon weight="duotone" className="size-5 text-watercourse-700" />
+                  <ScalesIcon className="size-5 text-watercourse-700" />
                   Regulamento e termos do sorteio
                 </span>
                 <span className="text-xs font-semibold text-watercourse-700 transition-transform group-open:rotate-180">▼</span>

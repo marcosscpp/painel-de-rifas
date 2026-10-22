@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Header, HttpCode, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Header, HttpCode, Patch, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { BuyerSessionService } from './buyer-session.service.js';
-import { BuyerLookupDto } from './dto/buyer.dto.js';
+import { BuyerDto, BuyerLookupDto, UpdateProfileDto } from './dto/buyer.dto.js';
 import { UsersService } from './users.service.js';
 
 @Public()
@@ -30,6 +30,28 @@ export class BuyerController {
     const user = await this.users.findBuyer(dto.phone, dto.cpf);
     await this.session.issue(res, user);
     return { buyer: this.session.publicProfile(user) };
+  }
+
+  // Tela "Cadastrar" (fora do checkout): cria a conta e já entra.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('register')
+  async register(@Body() dto: BuyerDto, @Res({ passthrough: true }) res: Response) {
+    const user = await this.users.registerBuyer(dto);
+    await this.session.issue(res, user);
+    return { buyer: this.session.publicProfile(user) };
+  }
+
+  // "Meus dados"
+  @Get('profile')
+  @Header('Cache-Control', 'no-store')
+  async profile(@Req() req: Request) {
+    return { profile: this.session.fullProfile(await requireBuyer(this.session, req)) };
+  }
+
+  @Patch('profile')
+  async updateProfile(@Req() req: Request, @Body() dto: UpdateProfileDto) {
+    const user = await requireBuyer(this.session, req);
+    return { profile: this.session.fullProfile(await this.users.updateProfile(user.id, dto)) };
   }
 
   @Post('logout')

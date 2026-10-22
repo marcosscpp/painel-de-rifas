@@ -13,8 +13,8 @@ export type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   label?: string
   error?: string
   hint?: string
-  leftIcon?: ReactNode
   options: SelectOption[]
+  leftIcon?: ReactNode
   wrapperClassName?: string
 }
 
@@ -22,8 +22,8 @@ export function Select({
   label,
   error,
   hint,
-  leftIcon,
   options,
+  leftIcon,
   wrapperClassName,
   className,
   id,
@@ -33,9 +33,9 @@ export function Select({
   const fieldId = id ?? auto
 
   const selectElement = (
-    <div className="relative flex items-center">
+    <div className="group relative flex items-center">
       {leftIcon && (
-        <span className="pointer-events-none absolute left-3.5 flex items-center text-slate-grey-500">
+        <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-grey-400 transition-colors group-focus-within:text-watercourse-700">
           {leftIcon}
         </span>
       )}
@@ -45,7 +45,7 @@ export function Select({
         aria-invalid={!!error}
         className={cn(
           fieldControlBase,
-          'cursor-pointer appearance-none bg-cream-50 pr-10',
+          'cursor-pointer appearance-none bg-white pr-11',
           Boolean(leftIcon) && 'pl-10',
           error ? 'border-error-500 focus:border-error-600 focus:ring-error-500/30' : 'border-cream-300',
           className,
@@ -57,8 +57,11 @@ export function Select({
           </option>
         ))}
       </select>
-      <span className="pointer-events-none absolute right-3.5 flex items-center text-slate-grey-600">
-        <CaretDownIcon weight="bold" className="size-4" />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 right-2.5 flex size-7 -translate-y-1/2 items-center justify-center rounded-lg bg-cream-200/65 p-2 text-slate-grey-600 transition group-hover:bg-anzac-100 group-hover:text-watercourse-800"
+      >
+        <CaretDownIcon weight="bold" className="size-3" />
       </span>
     </div>
   )

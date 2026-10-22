@@ -5,6 +5,7 @@ import { LoginPage } from '@/domains/auth'
 import { AdminLayout } from './layouts/AdminLayout'
 import { PublicLayout } from './layouts/PublicLayout'
 import { RequireAdmin } from './RequireAdmin'
+import { ScrollToTop } from './ScrollToTop'
 
 // Cada domínio vira um arquivo JS separado: quem compra rifa não baixa o código do painel.
 const page = <T extends Record<string, unknown>>(load: () => Promise<T>, name: keyof T) =>
@@ -14,6 +15,9 @@ const HomePage = page(() => import('@/domains/raffles'), 'HomePage')
 const RafflePage = page(() => import('@/domains/raffles'), 'RafflePage')
 const CheckoutPage = page(() => import('@/domains/checkout'), 'CheckoutPage')
 const MyNumbersPage = page(() => import('@/domains/my-numbers'), 'MyNumbersPage')
+const BuyerLoginPage = page(() => import('@/domains/account'), 'BuyerLoginPage')
+const BuyerRegisterPage = page(() => import('@/domains/account'), 'BuyerRegisterPage')
+const MyDataPage = page(() => import('@/domains/account'), 'MyDataPage')
 const DashboardPage = page(() => import('@/domains/admin-dashboard'), 'DashboardPage')
 const AdminRafflesPage = page(() => import('@/domains/admin-raffles'), 'AdminRafflesPage')
 const AdminRaffleFormPage = page(() => import('@/domains/admin-raffles'), 'AdminRaffleFormPage')
@@ -26,12 +30,16 @@ const NotFoundPage = page(() => import('./NotFoundPage'), 'NotFoundPage')
 export function AppRouter() {
   return (
     <Suspense fallback={<FullPageSpinner />}>
+      <ScrollToTop />
       <Routes>
         <Route element={<PublicLayout />}>
           <Route index element={<HomePage />} />
           <Route path="rifa/:slug" element={<RafflePage />} />
           <Route path="pedido/:orderId" element={<CheckoutPage />} />
           <Route path="meus-numeros" element={<MyNumbersPage />} />
+          <Route path="entrar" element={<BuyerLoginPage />} />
+          <Route path="cadastrar" element={<BuyerRegisterPage />} />
+          <Route path="minha-conta" element={<MyDataPage />} />
         </Route>
 
         <Route path="admin/login" element={<LoginPage />} />

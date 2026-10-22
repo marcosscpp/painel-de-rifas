@@ -1,8 +1,9 @@
 import { type FormEvent, useState } from 'react'
 import { FloppyDiskIcon } from '@phosphor-icons/react'
-import { Alert, Button, Input, Select, Textarea } from '@/shared/components'
+import { Alert, Button, DateTimeField, Input, Select, Textarea } from '@/shared/components'
 import type { SaleMode } from '@/shared/types'
 import { centsToInput, formatCents, isoToLocalInput, localInputToIso, parseMoneyToCents } from '@/shared/utils/format'
+import { isLotteryDay, nextLotteryDraws } from '@/shared/utils/dates'
 import type { AdminRaffle, RaffleInput } from '../types'
 
 // O admin decide como a rifa vende; o comprador não escolhe.
@@ -37,14 +38,26 @@ export function RaffleDetailsForm({ raffle, submitting, error, submitLabel, onSu
     drawDate: isoToLocalInput(raffle?.drawDate),
   })
   const [localError, setLocalError] = useState<string>()
+  const setValue = (k: keyof typeof f) => (value: string) => setF((s) => ({ ...s, [k]: value }))
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((s) => ({ ...s, [k]: e.target.value }))
 
   const priceCents = parseMoneyToCents(f.price)
   const total = Number(f.totalNumbers)
 
+  // Fim das vendas antes do sorteio; o sorteio usa o resultado da Loteria Federal (quarta e sábado).
+  const dateError =
+    f.endsAt && f.drawDate && new Date(f.endsAt) > new Date(f.drawDate)
+      ? 'O fim das vendas precisa ser antes do sorteio.'
+      : undefined
+  const drawHint =
+    f.drawDate && !isLotteryDay(f.drawDate)
+      ? 'Atenção: a Loteria Federal sorteia às quartas e aos sábados, às 19h.'
+      : 'Opcional. Use o dia de um concurso da Loteria Federal.'
+
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (priceCents === null || priceCents <= 0) return setLocalError('Preço inválido. Exemplo: 1,99')
+    if (dateError) return setLocalError(dateError)
     setLocalError(undefined)
     onSubmit({
       title: f.title,
@@ -107,8 +120,21 @@ export function RaffleDetailsForm({ raffle, submitting, error, submitLabel, onSu
           <Input label="Mín. por pedido" type="number" min={1} required value={f.minPerOrder} onChange={set('minPerOrder')} />
           <Input label="Máx. por pedido" type="number" min={1} required value={f.maxPerOrder} onChange={set('maxPerOrder')} />
         </div>
-        <Input label="Fim das vendas" type="datetime-local" value={f.endsAt} onChange={set('endsAt')} hint="Opcional" />
-        <Input label="Data do sorteio" type="datetime-local" value={f.drawDate} onChange={set('drawDate')} hint="Opcional" />
+        <DateTimeField
+          label="Fim das vendas"
+          value={f.endsAt}
+          onChange={setValue('endsAt')}
+          defaultTime="18:00"
+          hint="Opcional. Depois disso a rifa para de vender."
+          error={dateError}
+        />
+        <DateTimeField
+          label="Data do sorteio"
+          value={f.drawDate}
+          onChange={setValue('drawDate')}
+          hint={drawHint}
+          presets={nextLotteryDraws()}
+        />
       </div>
 
       {locked && (

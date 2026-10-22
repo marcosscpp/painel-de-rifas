@@ -117,4 +117,43 @@ describe('UsersService', () => {
       }
     });
   });
+
+  describe('registerBuyer', () => {
+    it('cria e devolve o cadastro quando celular e CPF são novos', async () => {
+      prisma.user.findFirst.mockResolvedValue(null);
+      await expect(service.registerBuyer(buyer())).resolves.toEqual({ id: 'u1' });
+      expect(prisma.user.findFirst.mock.calls[0][0].where).toEqual({ OR: [{ phone: '11987654321' }, { cpf: '52998224725' }] });
+    });
+
+    it('quem já tem cadastro é mandado entrar (não sobrescreve dados de ninguém)', async () => {
+      prisma.user.findFirst.mockResolvedValue({ id: 'u2' });
+      await expect(service.registerBuyer(buyer())).rejects.toThrow(ConflictException);
+      expect(prisma.user.upsert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('muda só nome, nome social, e-mail e endereço', async () => {
+      await service.updateProfile('u1', {
+        name: 'Maria S Souza',
+        socialName: '',
+        address: { zipCode: '01310-100', street: 'Av. Paulista', number: '1000', district: 'Bela Vista', city: 'São Paulo', state: 'SP' },
+      });
+      const call = prisma.user.update.mock.calls[0][0];
+      expect(call.where).toEqual({ id: 'u1' });
+      expect(call.data).toMatchObject({ name: 'Maria S Souza', socialName: null, zipCode: '01310100', streetNumber: '1000' });
+      expect(call.data).not.toHaveProperty('phone');
+      expect(call.data).not.toHaveProperty('cpf');
+    });
+
+    it('address null apaga o endereço', async () => {
+      await service.updateProfile('u1', { address: null });
+      expect(prisma.user.update.mock.calls[0][0].data).toMatchObject({ zipCode: null, street: null, city: null });
+    });
+
+    it('e-mail de outra pessoa é recusado', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'u2' });
+      await expect(service.updateProfile('u1', { email: 'a@b.com' })).rejects.toThrow(ConflictException);
+    });
+  });
 });

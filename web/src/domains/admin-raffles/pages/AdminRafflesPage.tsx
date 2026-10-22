@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FunnelSimpleIcon, MagnifyingGlassIcon, PlusIcon, TicketIcon } from '@phosphor-icons/react'
+import { CaretRightIcon, FunnelIcon, MagnifyingGlassIcon, PlusIcon, TicketIcon } from '@phosphor-icons/react'
 import { Link, useNavigate } from 'react-router'
 import {
   Alert,
@@ -11,7 +11,6 @@ import {
   Input,
   PageHeader,
   Pagination,
-  ProgressBar,
   RaffleStatusBadge,
   Select,
   Spinner,
@@ -36,41 +35,76 @@ const columns: ColumnDef<AdminRaffleListItem>[] = [
     key: 'title',
     header: 'Campanha',
     cell: (r) => (
-      <Link
-        to={`/admin/rifas/${r.id}`}
-        className="flex items-center gap-3 font-bold text-charcoal-900 hover:text-watercourse-800"
-      >
+      <Link to={`/admin/rifas/${r.id}`} className="flex items-center gap-3.5">
         {r.cover ? (
-          <img src={r.cover.thumb} alt="" className="h-11 w-16 shrink-0 rounded-lg object-cover" />
+          <img
+            src={r.cover.thumb}
+            alt=""
+            className="h-11 w-16 shrink-0 rounded-xl border border-cream-200 object-cover"
+          />
         ) : (
-          <span className="royal-gradient flex h-11 w-16 shrink-0 items-center justify-center rounded-lg text-anzac-300">
-            <TicketIcon weight="duotone" className="size-5" />
+          <span className="royal-gradient flex h-11 w-16 shrink-0 items-center justify-center rounded-xl p-3 text-anzac-300">
+            <TicketIcon className="size-5" />
           </span>
         )}
-        <span className="line-clamp-1">{r.title}</span>
+        <div className="min-w-0">
+          <p className="truncate font-bold text-charcoal-900 transition-colors group-hover:text-watercourse-800">
+            {r.title}
+          </p>
+          <p className="truncate text-xs text-slate-grey-500">
+            /rifa/{r.slug} · {r.saleMode === 'PICK' ? 'Dezenas' : 'Aleatório'}
+          </p>
+        </div>
       </Link>
     ),
   },
   {
     key: 'status',
     header: 'Status',
+    className: 'w-36',
     cell: (r) => <RaffleStatusBadge status={r.status} />,
   },
   {
     key: 'price',
     header: 'Preço',
-    cell: (r) => <span className="font-semibold text-watercourse-800">{formatCents(r.priceCents)}</span>,
+    className: 'w-32',
+    cell: (r) => <span className="font-mono text-sm font-semibold text-charcoal-900">{formatCents(r.priceCents)}</span>,
   },
   {
     key: 'totalNumbers',
     header: 'Cotas',
-    cell: (r) => <span className="font-mono text-xs text-slate-grey-700">{formatInt(r.totalNumbers)}</span>,
+    className: 'w-28',
+    cell: (r) => <span className="font-mono text-sm text-slate-grey-700">{formatInt(r.totalNumbers)}</span>,
   },
   {
     key: 'progress',
     header: 'Progresso',
-    className: 'w-52',
-    cell: (r) => <ProgressBar percent={r.progress.percent} label={`${r.progress.percent}% vendido`} />,
+    className: 'w-56',
+    cell: (r) => {
+      const pct = Math.max(0, Math.min(100, r.progress.percent))
+      return (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-baseline justify-between gap-2 text-xs">
+            <span className="font-mono font-bold text-charcoal-900">{pct}% vendido</span>
+            <span className="text-[11px] text-slate-grey-500">{formatInt(r.progress.paid)} pagos</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-cream-200">
+            <div
+              className="h-full rounded-full bg-watercourse-700 transition-[width] duration-500"
+              style={{ width: `${Math.max(pct, pct > 0 ? 4 : 0)}%` }}
+            />
+          </div>
+        </div>
+      )
+    },
+  },
+  {
+    key: 'action',
+    header: '',
+    className: 'w-10 text-right',
+    cell: () => (
+      <CaretRightIcon className="ml-auto size-4 text-slate-grey-400 transition group-hover:translate-x-0.5 group-hover:text-watercourse-800" />
+    ),
   },
 ]
 
@@ -101,11 +135,11 @@ export function AdminRafflesPage() {
         }
       />
 
-      <Card className="mb-5 flex flex-wrap items-end gap-4 p-4">
-        <div className="w-full sm:w-60">
+      <Card className="mb-5 flex flex-wrap items-end gap-4 bg-white p-4">
+        <div className="w-full sm:w-56">
           <Select
             label="Status"
-            leftIcon={<FunnelSimpleIcon weight="duotone" className="size-4" />}
+            leftIcon={<FunnelIcon className="size-4" />}
             options={statusOptions}
             value={status}
             onChange={(e) => {
@@ -119,6 +153,7 @@ export function AdminRafflesPage() {
             label="Buscar campanha"
             type="search"
             placeholder="Título ou endereço (slug)"
+            className="bg-white"
             leftIcon={<MagnifyingGlassIcon className="size-4" />}
             rightAdornment={isFetching && !isLoading ? <Spinner className="size-4 text-watercourse-700" /> : undefined}
             value={search}
@@ -136,6 +171,7 @@ export function AdminRafflesPage() {
         columns={columns}
         data={data?.items}
         keyExtractor={(r) => r.id}
+        onRowClick={(r) => navigate(`/admin/rifas/${r.id}`)}
         isLoading={isLoading}
         skeletonRows={5}
         emptyState={

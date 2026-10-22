@@ -46,7 +46,7 @@ export function CheckoutPanel({ draft, onDraftChange, submitLabel, submitting, o
       <form onSubmit={submit} className="flex flex-col gap-3.5">
         <div className="flex items-center justify-between gap-3 rounded-xl border border-watercourse-200 bg-watercourse-50 p-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <UserCheckIcon weight="duotone" className="size-6 shrink-0 text-watercourse-700" />
+            <UserCheckIcon className="size-5 shrink-0 text-watercourse-700" />
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-slate-grey-600">Comprando como</p>
               <p className="truncate text-sm font-bold text-charcoal-900">

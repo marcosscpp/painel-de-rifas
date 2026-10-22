@@ -26,7 +26,7 @@ export function RaffleCard({ raffle, variant = 'compact' }: Props) {
             />
           ) : (
             <div className="royal-gradient flex h-full w-full items-center justify-center text-anzac-400/50">
-              <TicketIcon weight="duotone" className="size-14 -rotate-12" />
+              <TicketIcon className="size-14 -rotate-12" />
             </div>
           )}
           <div className="absolute top-3 left-3 flex items-center gap-2">
@@ -61,7 +61,7 @@ export function RaffleCard({ raffle, variant = 'compact' }: Props) {
 
           {raffle.drawDate && (
             <div className="flex items-center gap-1.5 text-xs text-slate-grey-500">
-              <CalendarBlankIcon weight="duotone" className="size-3.5 text-watercourse-700" />
+              <CalendarBlankIcon className="size-3.5 text-watercourse-700" />
               <span>Sorteio: {formatDateTime(raffle.drawDate)}</span>
             </div>
           )}
@@ -86,7 +86,7 @@ export function RaffleCard({ raffle, variant = 'compact' }: Props) {
           />
         ) : (
           <div className="royal-gradient flex h-full w-full items-center justify-center text-anzac-400/50">
-            <TicketIcon weight="duotone" className="size-8 -rotate-12" />
+            <TicketIcon className="size-8 -rotate-12" />
           </div>
         )}
       </div>

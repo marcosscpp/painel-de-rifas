@@ -1,16 +1,9 @@
-import { type FormEvent, useState } from 'react'
+import type { FormEvent } from 'react'
 import { ArrowLeftIcon, LightningIcon, MapPinIcon, UserCircleIcon } from '@phosphor-icons/react'
-import { Button, Input, Select } from '@/shared/components'
-import {
-  dateInputToIso,
-  maskCpfInput,
-  maskDateInput,
-  maskPhoneInput,
-  maskZipInput,
-} from '@/shared/utils/format'
-import { UFS } from '../constants'
+import { Button, Input } from '@/shared/components'
+import { dateInputToIso, maskCpfInput, maskDateInput, maskPhoneInput } from '@/shared/utils/format'
+import { AddressFields } from './AddressFields'
 import { useCheckoutSettings } from '../hooks/useOrder'
-import { buyerApi } from '../services/buyer.api'
 import type { BuyerDraft, BuyerInput } from '../types'
 
 type Props = {
@@ -19,19 +12,32 @@ type Props = {
   submitLabel: string
   submitting: boolean
   onSubmit: (buyer: BuyerInput) => void
-  onCancel: () => void
-  onHaveAccount: () => void
+  onCancel?: () => void
+  cancelLabel?: string
+  onHaveAccount?: () => void
+  haveAccountLabel?: string
+  // Texto do aceite: no checkout fala do regulamento da campanha, no cadastro dos termos do site.
+  acceptText?: (minAge: number) => string
 }
 
 const digits = (v: string) => v.replace(/\D/g, '')
 
 // Cadastro do comprador, com os mesmos campos do Wesley Alemão. Sem senha: celular + CPF
 // identificam a pessoa. Controlado por fora para não perder o que foi digitado se ela fechar o modal.
-export function BuyerForm({ value, onChange, submitLabel, submitting, onSubmit, onCancel, onHaveAccount }: Props) {
+export function BuyerForm({
+  value,
+  onChange,
+  submitLabel,
+  submitting,
+  onSubmit,
+  onCancel,
+  cancelLabel = 'Voltar para as cotas',
+  onHaveAccount,
+  haveAccountLabel = 'Já comprei antes',
+  acceptText = (age) => `Ao concluir, declaro ter ${age} anos ou mais e que li e concordo com o regulamento da campanha.`,
+}: Props) {
   const set = (patch: Partial<BuyerDraft>) => onChange({ ...value, ...patch })
-  const setAddr = (patch: Partial<BuyerDraft['address']>) => set({ address: { ...value.address, ...patch } })
   const minAge = useCheckoutSettings().data?.minBuyerAge ?? 18
-  const [cepState, setCepState] = useState<'idle' | 'loading' | 'error'>('idle')
 
   // Erros só depois de digitar o suficiente, para não brigar com quem ainda está preenchendo.
   const phone = digits(value.phone)
@@ -44,23 +50,6 @@ export function BuyerForm({ value, onChange, submitLabel, submitting, onSubmit, 
   const birthError = value.birthDate.length === 10 && !birthIso ? 'Data inválida' : undefined
   const nameError =
     value.name.trim().length > 3 && value.name.trim().split(/\s+/).length < 2 ? 'Informe nome e sobrenome' : undefined
-
-  const lookupCep = async (masked: string) => {
-    setAddr({ zipCode: masked })
-    const cep = digits(masked)
-    if (cep.length !== 8) return
-    setCepState('loading')
-    try {
-      const a = await buyerApi.cep(cep)
-      onChange({
-        ...value,
-        address: { ...value.address, zipCode: masked, street: a.street, district: a.district, city: a.city, state: a.state },
-      })
-      setCepState('idle')
-    } catch {
-      setCepState('error')
-    }
-  }
 
   const blocked = !!(phoneError || confirmError || cpfError || birthError || nameError)
 
@@ -110,7 +99,7 @@ export function BuyerForm({ value, onChange, submitLabel, submitting, onSubmit, 
             onClick={() => set({ showSocialName: true })}
             className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-slate-grey-600 hover:text-watercourse-800"
           >
-            <UserCircleIcon weight="duotone" className="size-3.5" />
+            <UserCircleIcon className="size-3.5" />
             Informar o nome social
           </button>
         )}
@@ -188,50 +177,11 @@ export function BuyerForm({ value, onChange, submitLabel, submitting, onSubmit, 
           onChange={(e) => set({ wantsAddress: e.target.checked })}
           className="size-4 accent-watercourse-800"
         />
-        <MapPinIcon weight="duotone" className="size-4 text-watercourse-700" />
+        <MapPinIcon className="size-4 text-watercourse-700" />
         Desejo informar o meu endereço
       </label>
 
-      {value.wantsAddress && (
-        <div className="flex flex-col gap-3 rounded-xl border border-cream-200 bg-cream-100/50 p-3">
-          <Input
-            label="CEP"
-            required
-            inputMode="numeric"
-            placeholder="00000-000"
-            value={value.address.zipCode}
-            hint={cepState === 'loading' ? 'Buscando endereço…' : undefined}
-            error={cepState === 'error' ? 'CEP não encontrado. Preencha à mão.' : undefined}
-            onChange={(e) => void lookupCep(maskZipInput(e.target.value))}
-          />
-          <div className="grid grid-cols-[1fr_6rem] gap-3">
-            <Input label="Rua ou avenida" required value={value.address.street} onChange={(e) => setAddr({ street: e.target.value })} />
-            <Input label="Número" required placeholder="123 ou S/N" value={value.address.number} onChange={(e) => setAddr({ number: e.target.value })} />
-          </div>
-          <Input label="Bairro" required value={value.address.district} onChange={(e) => setAddr({ district: e.target.value })} />
-          <div className="grid grid-cols-[1fr_6rem] gap-3">
-            <Input label="Cidade" required value={value.address.city} onChange={(e) => setAddr({ city: e.target.value })} />
-            <Select
-              label="UF"
-              required
-              value={value.address.state}
-              onChange={(e) => setAddr({ state: e.target.value })}
-              options={[{ value: '', label: '--' }, ...UFS.map((uf) => ({ value: uf, label: uf }))]}
-            />
-          </div>
-          <Input
-            label="Complemento (opcional)"
-            placeholder="Apartamento, bloco, casa…"
-            value={value.address.complement}
-            onChange={(e) => setAddr({ complement: e.target.value })}
-          />
-          <Input
-            label="Ponto de referência (opcional)"
-            value={value.address.reference}
-            onChange={(e) => setAddr({ reference: e.target.value })}
-          />
-        </div>
-      )}
+      {value.wantsAddress && <AddressFields value={value.address} onChange={(address) => set({ address })} />}
 
       <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-cream-200 bg-cream-100/70 p-3 text-xs text-slate-grey-700">
         <input
@@ -241,19 +191,23 @@ export function BuyerForm({ value, onChange, submitLabel, submitting, onSubmit, 
           onChange={(e) => set({ accepted: e.target.checked })}
           className="mt-0.5 size-4 accent-watercourse-800"
         />
-        <span>Ao concluir, declaro ter {minAge} anos ou mais e que li e concordo com o regulamento da campanha.</span>
+        <span>{acceptText(minAge)}</span>
       </label>
       <Button type="submit" variant="buy" loading={submitting} disabled={blocked} className="py-3.5 text-base">
         <LightningIcon weight="fill" className="size-4.5" />
         {submitLabel}
       </Button>
-      <Button type="button" variant="ghost" onClick={onHaveAccount}>
-        Já comprei antes
-      </Button>
-      <Button type="button" variant="ghost" onClick={onCancel} className="text-xs">
-        <ArrowLeftIcon weight="bold" className="size-4" />
-        Voltar para as cotas
-      </Button>
+      {onHaveAccount && (
+        <Button type="button" variant="ghost" onClick={onHaveAccount}>
+          {haveAccountLabel}
+        </Button>
+      )}
+      {onCancel && (
+        <Button type="button" variant="ghost" onClick={onCancel} className="text-xs">
+          <ArrowLeftIcon weight="bold" className="size-4" />
+          {cancelLabel}
+        </Button>
+      )}
     </form>
   )
 }

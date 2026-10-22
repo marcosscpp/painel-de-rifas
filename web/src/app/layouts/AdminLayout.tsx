@@ -65,7 +65,7 @@ export function AdminLayout() {
             >
               {({ isActive }) => (
                 <>
-                  <Icon weight={isActive ? 'fill' : 'duotone'} className="size-5 shrink-0" />
+                  <Icon weight={isActive ? 'fill' : 'regular'} className="size-5 shrink-0" />
                   {item.label}
                 </>
               )}

@@ -3,7 +3,7 @@ import { Prisma } from '../../generated/prisma/client.js';
 import { ageOn, normalizeCpf, normalizePhone, normalizeZip, parseDateOnly } from '../../common/utils/br.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import { SettingsService } from '../settings/settings.service.js';
-import type { BuyerDto } from './dto/buyer.dto.js';
+import type { BuyerDto, UpdateProfileDto } from './dto/buyer.dto.js';
 
 const isUniqueViolation = (e: unknown) =>
   e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002';
@@ -93,6 +93,53 @@ export class UsersService {
       throw new NotFoundException('Não encontramos cadastro com esse celular e CPF');
     }
     return user;
+  }
+
+  // Cadastro pela tela "Cadastrar": só cria. Quem já tem cadastro entra com celular + CPF,
+  // assim ninguém troca os dados de outra pessoa sabendo só o celular.
+  async registerBuyer(input: BuyerDto) {
+    const phone = normalizePhone(input.phone);
+    const cpf = normalizeCpf(input.cpf);
+    const taken = await this.prisma.user.findFirst({
+      where: { OR: [...(phone ? [{ phone }] : []), ...(cpf ? [{ cpf }] : [])] },
+      select: { id: true },
+    });
+    if (taken) throw new ConflictException('Você já tem cadastro. Entre com seu celular e CPF.');
+    return this.upsertBuyer(input);
+  }
+
+  // "Meus dados": celular, CPF e nascimento identificam a pessoa e não mudam por aqui.
+  async updateProfile(userId: string, input: UpdateProfileDto) {
+    if (input.email) {
+      const owner = await this.prisma.user.findUnique({ where: { email: input.email }, select: { id: true } });
+      if (owner && owner.id !== userId) throw new ConflictException('Este e-mail já está em outro cadastro');
+    }
+    let address = {};
+    if (input.address === null) {
+      address = { zipCode: null, street: null, streetNumber: null, district: null, city: null, state: null, complement: null, reference: null };
+    } else if (input.address) {
+      const zipCode = normalizeZip(input.address.zipCode);
+      if (!zipCode) throw new BadRequestException('CEP inválido');
+      address = {
+        zipCode,
+        street: input.address.street,
+        streetNumber: input.address.number,
+        district: input.address.district,
+        city: input.address.city,
+        state: input.address.state,
+        complement: input.address.complement ?? null,
+        reference: input.address.reference ?? null,
+      };
+    }
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.socialName !== undefined && { socialName: input.socialName || null }),
+        ...(input.email !== undefined && { email: input.email }),
+        ...address,
+      },
+    });
   }
 
   async getBuyer(id: string) {

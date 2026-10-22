@@ -40,8 +40,8 @@ export function HomePage() {
         className="group mt-2 flex items-center justify-between rounded-2xl border border-cream-200 bg-white p-4 shadow-2xs transition hover:border-anzac-400 hover:shadow-sm"
       >
         <div className="flex items-center gap-3.5">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-watercourse-950 text-anzac-400 shadow-2xs">
-            <ChatCircleDotsIcon weight="duotone" className="size-6" />
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-watercourse-950 p-3 text-anzac-400 shadow-2xs">
+            <ChatCircleDotsIcon className="size-5" />
           </div>
           <div>
             <p className="font-wide text-sm font-extrabold text-charcoal-900">Dúvidas?</p>

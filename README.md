@@ -74,6 +74,17 @@ Webhook no painel do Asaas: URL `https://DOMINIO/api/webhooks/asaas`, token de a
 
 Garantias: evento repetido é ignorado (`webhook_events` com chave única); se o processamento falhar, o evento é apagado para o Asaas reenviar; o pedido é travado na confirmação para não cruzar com a expiração. Pix pago depois de expirar devolve os mesmos números se ainda estiverem livres; senão o pedido fica marcado com `refundRequired` para reembolso pelo painel.
 
+## Telas
+
+| Público | Admin (`/admin`) |
+|---|---|
+| `/` campanhas, `/rifa/:slug` compra (roleta ou grade) e resultado | Dashboard: faturamento, hoje, 30 dias, progresso das campanhas |
+| `/pedido/:id` Pix com tempo para pagar, detalhes da compra e números | Rifas: cadastro, prêmios, pacotes, publicar/pausar/encerrar |
+| `/entrar` (celular + CPF, sem senha) e `/cadastrar` | Pedidos: filtros, detalhe, cancelar, reembolso, exportar CSV |
+| `/meus-numeros` minhas compras, `/minha-conta` meus dados | Compradores, Sorteios (Loteria Federal), Configurações |
+
+O comprador entra sem senha: celular + CPF do cadastro, e o site lembra a pessoa por `BUYER_SESSION_DAYS` (cookie httpOnly separado do admin). Celular, CPF e nascimento só mudam pelo suporte.
+
 ## Segurança
 
 | Camada | O que está feito |

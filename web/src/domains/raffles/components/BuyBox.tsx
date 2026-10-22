@@ -86,7 +86,7 @@ export function BuyBox({ raffle, mode, selected, onDeselect }: Props) {
       {/* Cabeçalho Royal Teal */}
       <div className="royal-gradient flex items-center justify-between px-5 py-4 text-cream-50">
         <div className="flex items-center gap-2">
-          <TicketIcon weight="duotone" className="size-5 text-anzac-400" />
+          <TicketIcon className="size-5 text-anzac-400" />
           <span className="font-wide text-sm font-bold">Garanta suas cotas</span>
         </div>
         <span className="rounded-lg border border-anzac-400/30 bg-watercourse-950/50 px-2.5 py-1 text-xs font-bold text-anzac-300">

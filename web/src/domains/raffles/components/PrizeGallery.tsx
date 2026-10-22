@@ -49,7 +49,7 @@ export function PrizeGallery({ prize }: { prize: PublicPrize }) {
           </div>
           {prize.valueCents != null && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-watercourse-800">
-              <CoinsIcon weight="duotone" className="size-4 text-anzac-500" />
+              <CoinsIcon className="size-4 text-anzac-500" />
               Valor estimado: {formatCents(prize.valueCents)}
             </span>
           )}

@@ -400,7 +400,7 @@ export class OrdersService {
       where: { id },
       include: {
         raffle: true,
-        user: { select: { name: true, phone: true } },
+        user: { select: { name: true, phone: true, cpf: true } },
         numbers: { select: { number: true }, orderBy: { number: 'asc' } },
         payment: true,
       },
@@ -420,12 +420,18 @@ export class OrdersService {
       refundRequired: o.refundRequired,
       // Pedido expirado vem sem números: eles já voltaram para a venda.
       numbers: o.numbers.map((n) => n.number),
-      buyer: { name: o.user.name.split(' ')[0], phone: o.user.phone ? maskPhone(o.user.phone) : null },
+      // Quem tem o link do pedido vê só o primeiro nome e dados mascarados (como no Wesley).
+      buyer: {
+        name: o.user.name.split(' ')[0],
+        phone: o.user.phone ? maskPhone(o.user.phone) : null,
+        cpf: o.user.cpf ? o.user.cpf.slice(0, 3) + '.***.***-**' : null,
+      },
       raffle: {
         slug: o.raffle.slug,
         title: o.raffle.title,
         totalNumbers: o.raffle.totalNumbers,
         priceCents: o.raffle.priceCents,
+        drawDate: o.raffle.drawDate,
         cover: this.uploads.urls(o.raffle.coverKey),
       },
       // QR Code e copia e cola só enquanto dá para pagar.

@@ -2,13 +2,12 @@ import type { HTMLAttributes, ReactNode, TdHTMLAttributes, ThHTMLAttributes } fr
 import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react'
 import { cn } from '@/shared/utils/cn'
 import { Button } from './Button'
-import { Card } from './Card'
 import { Skeleton } from './Skeleton'
 
 export function Table({ className, ...rest }: HTMLAttributes<HTMLTableElement>) {
   return (
     <div className="w-full overflow-x-auto">
-      <table className={cn('w-full text-left text-sm', className)} {...rest} />
+      <table className={cn('w-full border-collapse text-left text-sm', className)} {...rest} />
     </div>
   )
 }
@@ -17,7 +16,7 @@ export function TableHeader({ className, ...rest }: HTMLAttributes<HTMLTableSect
   return (
     <thead
       className={cn(
-        'border-b border-cream-200 bg-cream-100/90 text-xs font-bold tracking-wider text-slate-grey-600 uppercase',
+        'border-b border-cream-200 bg-cream-100/60 text-[11px] font-bold tracking-wider text-slate-grey-600 uppercase',
         className,
       )}
       {...rest}
@@ -26,19 +25,19 @@ export function TableHeader({ className, ...rest }: HTMLAttributes<HTMLTableSect
 }
 
 export function TableBody({ className, ...rest }: HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody className={cn('divide-y divide-cream-200', className)} {...rest} />
+  return <tbody className={cn('divide-y divide-cream-200/80 bg-white', className)} {...rest} />
 }
 
 export function TableRow({ className, ...rest }: HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn('transition-colors hover:bg-cream-100/60', className)} {...rest} />
+  return <tr className={cn('group transition-colors hover:bg-cream-50/90', className)} {...rest} />
 }
 
 export function TableHead({ className, ...rest }: ThHTMLAttributes<HTMLTableCellElement>) {
-  return <th className={cn('px-4 py-3.5 font-bold', className)} {...rest} />
+  return <th className={cn('px-5 py-3.5 font-semibold whitespace-nowrap', className)} {...rest} />
 }
 
 export function TableCell({ className, ...rest }: TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn('px-4 py-3.5 align-middle', className)} {...rest} />
+  return <td className={cn('px-5 py-4 align-middle', className)} {...rest} />
 }
 
 export type ColumnDef<T> = {
@@ -52,6 +51,7 @@ type DataTableProps<T> = {
   columns: ColumnDef<T>[]
   data?: T[]
   keyExtractor: (row: T) => string
+  onRowClick?: (row: T) => void
   isLoading?: boolean
   skeletonRows?: number
   emptyState?: ReactNode
@@ -61,13 +61,14 @@ export function DataTable<T>({
   columns,
   data,
   keyExtractor,
+  onRowClick,
   isLoading,
   skeletonRows = 5,
   emptyState,
 }: DataTableProps<T>) {
   if (isLoading) {
     return (
-      <Card className="overflow-hidden p-0">
+      <div className="overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-2xs">
         <Table>
           <TableHeader>
             <tr>
@@ -90,7 +91,7 @@ export function DataTable<T>({
             ))}
           </TableBody>
         </Table>
-      </Card>
+      </div>
     )
   }
 
@@ -99,7 +100,7 @@ export function DataTable<T>({
   }
 
   return (
-    <Card className="overflow-hidden p-0">
+    <div className="overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-2xs">
       <Table>
         <TableHeader>
           <tr>
@@ -112,7 +113,11 @@ export function DataTable<T>({
         </TableHeader>
         <TableBody>
           {data.map((row) => (
-            <TableRow key={keyExtractor(row)}>
+            <TableRow
+              key={keyExtractor(row)}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              className={onRowClick ? 'cursor-pointer' : undefined}
+            >
               {columns.map((col) => (
                 <TableCell key={col.key} className={col.className}>
                   {col.cell(row)}
@@ -122,7 +127,7 @@ export function DataTable<T>({
           ))}
         </TableBody>
       </Table>
-    </Card>
+    </div>
   )
 }
 
@@ -139,7 +144,7 @@ export function Pagination({
   return (
     <div className="mt-4 flex items-center justify-between gap-3 text-sm">
       <Button variant="secondary" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-        <CaretLeftIcon weight="bold" className="size-4" />
+        <CaretLeftIcon className="size-4" />
         Anterior
       </Button>
       <span className="text-xs font-semibold text-slate-grey-600">
@@ -147,7 +152,7 @@ export function Pagination({
       </span>
       <Button variant="secondary" disabled={page >= pages} onClick={() => onPageChange(page + 1)}>
         Próxima
-        <CaretRightIcon weight="bold" className="size-4" />
+        <CaretRightIcon className="size-4" />
       </Button>
     </div>
   )

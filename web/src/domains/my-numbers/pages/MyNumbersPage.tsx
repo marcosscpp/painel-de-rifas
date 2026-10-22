@@ -1,38 +1,36 @@
-import { SignOutIcon, TicketIcon, UserCheckIcon } from '@phosphor-icons/react'
-import { Link } from 'react-router'
-import { BuyerLookupForm, useBuyerLogout, useBuyerSession, useMyOrders } from '@/domains/checkout'
-import { Alert, Button, Card, EmptyState, FullPageSpinner, PageHeader } from '@/shared/components'
+import { SignOutIcon, TicketIcon } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { Link, Navigate } from 'react-router'
+import { AccountTabs, loginPath, ScamWarning } from '@/domains/account'
+import { type OrderStatus, useBuyerLogout, useBuyerSession, useMyOrders } from '@/domains/checkout'
+import { Alert, Button, EmptyState, FullPageSpinner, PageHeader, Tabs } from '@/shared/components'
 import { MyOrderCard } from '../components/MyOrderCard'
 
-// Compras e números do comprador. Quem já comprou neste navegador entra direto;
-// em outro aparelho, identifica-se com celular + CPF.
+type Filter = 'ALL' | OrderStatus
+
+// "Minhas compras": pedidos e números do comprador logado. Sem sessão, manda entrar.
 export function MyNumbersPage() {
   const session = useBuyerSession()
   const buyer = session.data
   const orders = useMyOrders(!!buyer)
   const logout = useBuyerLogout()
+  const [filter, setFilter] = useState<Filter>('ALL')
 
   if (session.isLoading) return <FullPageSpinner />
+  if (!buyer) return <Navigate to={loginPath('/meus-numeros')} replace />
 
-  if (!buyer) {
-    return (
-      <div className="mx-auto max-w-md">
-        <PageHeader title="Meus números" subtitle="Consulte suas compras e números" />
-        <Card className="p-5">
-          <p className="mb-4 text-sm text-slate-grey-700">
-            Informe o celular e o CPF usados na compra.
-          </p>
-          <BuyerLookupForm onFound={() => undefined} submitLabel="Consultar meus números" />
-        </Card>
-      </div>
-    )
-  }
+  const all = orders.data?.orders ?? []
+  const count = (s: OrderStatus) => all.filter((o) => o.status === s).length
+  const list =
+    filter === 'ALL'
+      ? all
+      : all.filter((o) => o.status === filter || (filter === 'EXPIRED' && o.status === 'CANCELED'))
 
-  const list = orders.data?.orders ?? []
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader
-        title="Meus números"
+        title={`Olá, ${buyer.name}`}
+        subtitle={buyer.phone ? `Compras feitas com o celular ${buyer.phone}` : 'Suas compras e números'}
         actions={
           <Button variant="ghost" className="text-xs" loading={logout.isPending} onClick={() => logout.mutate()}>
             <SignOutIcon weight="bold" className="size-4" />
@@ -40,19 +38,14 @@ export function MyNumbersPage() {
           </Button>
         }
       />
-      <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-watercourse-200 bg-watercourse-50 p-3 text-sm">
-        <UserCheckIcon weight="duotone" className="size-5 text-watercourse-700" />
-        <span>
-          <strong className="text-charcoal-900">{buyer.name}</strong>{' '}
-          <span className="text-slate-grey-600">· {buyer.phone}</span>
-        </span>
-      </div>
+      <AccountTabs />
+      <ScamWarning />
 
       {orders.isLoading && <FullPageSpinner />}
       {orders.error && <Alert tone="error">Não foi possível carregar suas compras. Tente de novo em instantes.</Alert>}
-      {orders.data && list.length === 0 && (
+      {orders.data && all.length === 0 && (
         <EmptyState
-          icon={<TicketIcon weight="duotone" className="size-7" />}
+          icon={<TicketIcon className="size-6" />}
           title="Nenhuma compra ainda"
           description="Quando você comprar, seus números aparecem aqui."
           action={
@@ -62,11 +55,27 @@ export function MyNumbersPage() {
           }
         />
       )}
-      <div className="flex flex-col gap-3">
-        {list.map((o) => (
-          <MyOrderCard key={o.id} order={o} />
-        ))}
-      </div>
+      {all.length > 0 && (
+        <>
+          <Tabs<Filter>
+            className="mb-4"
+            value={filter}
+            onChange={setFilter}
+            items={[
+              { value: 'ALL', label: 'Todas', count: all.length },
+              { value: 'PAID', label: 'Pagas', count: count('PAID') },
+              { value: 'PENDING', label: 'Aguardando', count: count('PENDING') },
+              { value: 'EXPIRED', label: 'Expiradas', count: count('EXPIRED') + count('CANCELED') },
+            ]}
+          />
+          {list.length === 0 && <p className="py-6 text-center text-sm text-slate-grey-600">Nenhuma compra neste filtro.</p>}
+          <div className="flex flex-col gap-3">
+            {list.map((o) => (
+              <MyOrderCard key={o.id} order={o} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

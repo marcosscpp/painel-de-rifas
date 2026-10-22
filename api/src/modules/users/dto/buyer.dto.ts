@@ -116,3 +116,30 @@ export class BuyerLookupDto {
   @MaxLength(20)
   cpf: string;
 }
+
+// "Meus dados": só o que a pessoa pode mudar sozinha. address: null remove o endereço.
+export class UpdateProfileDto {
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(80)
+  @Matches(/^\S{2,}(\s+\S+)+$/u, { message: 'Informe nome e sobrenome' })
+  name?: string;
+
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(80)
+  socialName?: string;
+
+  @IsOptional()
+  @Transform(lower)
+  @IsEmail({}, { message: 'E-mail inválido' })
+  @MaxLength(254)
+  email?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AddressDto)
+  address?: AddressDto | null;
+}

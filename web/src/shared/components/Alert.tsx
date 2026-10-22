@@ -31,9 +31,9 @@ export function Alert({ tone = 'info', children }: { tone?: keyof typeof tones; 
   return (
     <div
       role={tone === 'error' ? 'alert' : 'status'}
-      className={cn('flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-medium shadow-2xs', t.box)}
+      className={cn('flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-medium', t.box)}
     >
-      <Icon weight="duotone" className={cn('mt-0.5 size-5 shrink-0', t.iconColor)} />
+      <Icon className={cn('mt-0.5 size-5 shrink-0', t.iconColor)} />
       <div className="min-w-0 flex-1 whitespace-pre-line">{children}</div>
     </div>
   )

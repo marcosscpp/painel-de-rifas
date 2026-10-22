@@ -9,7 +9,7 @@ export function OrderNumbers({ numbers, total }: { numbers: number[]; total: num
           key={n}
           className="inline-flex items-center gap-1 rounded-lg border border-watercourse-200 bg-watercourse-50 px-2.5 py-1 font-mono text-sm font-bold text-watercourse-900 shadow-2xs"
         >
-          <TicketIcon weight="duotone" className="size-3.5 text-anzac-600" />
+          <TicketIcon className="size-3.5 text-anzac-600" />
           {padNumber(n, total)}
         </span>
       ))}

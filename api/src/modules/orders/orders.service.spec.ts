@@ -35,7 +35,7 @@ const ORDER_ROW = {
   paidAt: null,
   createdAt: new Date(),
   raffle: RAFFLE,
-  user: { name: 'Maria da Silva', phone: '11987654321' },
+  user: { name: 'Maria da Silva', phone: '11987654321', cpf: '52998224725' },
   numbers: [{ number: 7 }, { number: 42 }],
   payment: { id: 'pay1', status: 'PENDING', pixCopyPaste: 'copia', pixQrCodeBase64: 'qr' },
 };
@@ -238,9 +238,9 @@ describe('OrdersService', () => {
   });
 
   describe('get', () => {
-    it('mostra só o primeiro nome e o telefone mascarado', async () => {
+    it('mostra só o primeiro nome, telefone e CPF mascarados', async () => {
       const out = await service.get('o1');
-      expect(out.buyer).toEqual({ name: 'Maria', phone: '(11) 9****-4321' });
+      expect(out.buyer).toEqual({ name: 'Maria', phone: '(11) 9****-4321', cpf: '529.***.***-**' });
       expect(out.numbers).toEqual([7, 42]);
     });
 

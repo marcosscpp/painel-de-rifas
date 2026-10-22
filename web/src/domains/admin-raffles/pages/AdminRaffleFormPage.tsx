@@ -31,14 +31,14 @@ function Section({
   children: ReactNode
 }) {
   return (
-    <Card className="p-6">
-      <div className="flex items-start gap-3 border-b border-cream-200 pb-3.5">
+    <Card className="bg-white p-6">
+      <div className="flex items-start gap-3.5 border-b border-cream-200 pb-4">
         {icon && (
-          <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border border-anzac-200 bg-anzac-50 text-watercourse-800">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-watercourse-50 p-2.5 text-watercourse-700 ring-1 ring-watercourse-200/60">
             {icon}
           </span>
         )}
-        <div>
+        <div className="min-w-0">
           <h2 className="font-wide text-lg font-bold text-charcoal-900">{title}</h2>
           {description && <p className="mt-0.5 text-sm text-slate-grey-600">{description}</p>}
         </div>
@@ -63,7 +63,7 @@ function NewRaffle() {
       <Section
         title="Dados da rifa"
         description="Depois de criar, você adiciona capa, prêmios e pacotes."
-        icon={<FileTextIcon weight="duotone" className="size-5" />}
+        icon={<FileTextIcon className="size-5" />}
       >
         <RaffleDetailsForm
           submitLabel="Criar rascunho"
@@ -96,10 +96,10 @@ function EditRaffle({ id }: { id: string }) {
               <Link
                 to={`/rifa/${raffle.slug}`}
                 target="_blank"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-cream-300 bg-cream-50 px-3 py-1.5 text-xs font-bold text-watercourse-800 transition hover:border-anzac-400 hover:bg-white"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-cream-300 bg-white px-3 py-1.5 text-xs font-bold text-watercourse-800 transition hover:border-anzac-400"
               >
                 Ver no site
-                <ArrowSquareOutIcon weight="bold" className="size-3.5" />
+                <ArrowSquareOutIcon className="size-3.5" />
               </Link>
             )}
           </div>
@@ -107,7 +107,7 @@ function EditRaffle({ id }: { id: string }) {
       />
 
       {raffle.status !== 'DRAFT' && (
-        <Card className="p-6">
+        <Card className="bg-white p-6">
           <ProgressBar
             percent={raffle.progress.percent}
             label={`${formatInt(raffle.progress.paid)} pagos · ${formatInt(raffle.progress.reserved)} reservados · ${formatInt(raffle.progress.available)} livres (${raffle.progress.percent}%)`}
@@ -115,23 +115,23 @@ function EditRaffle({ id }: { id: string }) {
         </Card>
       )}
 
-      <Section title="Status e publicação" icon={<SlidersHorizontalIcon weight="duotone" className="size-5" />}>
+      <Section title="Status e publicação" icon={<SlidersHorizontalIcon className="size-5" />}>
         <RaffleActions raffle={raffle} />
       </Section>
 
-      <Section title="Dados da rifa" icon={<FileTextIcon weight="duotone" className="size-5" />}>
+      <Section title="Dados da rifa" icon={<FileTextIcon className="size-5" />}>
         {/* key: recarrega o formulário quando a rifa muda de status (campos travados) */}
         <EditDetails key={raffle.status} raffle={raffle} />
       </Section>
 
-      <Section title="Imagem de capa" icon={<ImageIcon weight="duotone" className="size-5" />}>
+      <Section title="Imagem de capa" icon={<ImageIcon className="size-5" />}>
         <CoverSection raffle={raffle} />
       </Section>
 
       <Section
         title="Prêmios"
         description="O 1º prêmio aparece em destaque na página da rifa."
-        icon={<TrophyIcon weight="duotone" className="size-5" />}
+        icon={<TrophyIcon className="size-5" />}
       >
         <PrizesEditor raffle={raffle} />
       </Section>
@@ -139,7 +139,7 @@ function EditRaffle({ id }: { id: string }) {
       <Section
         title="Pacotes promocionais"
         description={`Atalhos de compra. Cada pacote precisa ficar entre ${raffle.minPerOrder} e ${raffle.maxPerOrder} números.`}
-        icon={<PackageIcon weight="duotone" className="size-5" />}
+        icon={<PackageIcon className="size-5" />}
       >
         <PackagesEditor raffle={raffle} />
       </Section>

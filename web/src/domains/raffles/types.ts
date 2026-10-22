@@ -30,7 +30,17 @@ export type RaffleDetail = Omit<RaffleSummary, 'mainPrize'> & {
   maxPerOrder: number
   packages: Array<{ quantity: number; highlighted: boolean; totalCents: number }>
   prizes: PublicPrize[]
-  result: { lotteryContest: string | null; winningNumber: number | null; drawnAt: string | null } | null
+  result: RaffleResult | null
+}
+
+// Resultado publicado depois do sorteio pela Loteria Federal.
+export type RaffleResult = {
+  lotteryContest: string | null
+  lotteryPrizes: string[]
+  winningNumber: number | null
+  explanation: string | null
+  winnerName: string | null
+  drawnAt: string | null
 }
 
 // Página da grade: um caractere por número (0 livre, 1 reservado, 2 pago).

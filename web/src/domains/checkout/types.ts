@@ -14,8 +14,15 @@ export type Order = {
   createdAt: string
   refundRequired: boolean
   numbers: number[]
-  buyer: { name: string; phone: string | null }
-  raffle: { slug: string; title: string; totalNumbers: number; priceCents: number; cover: ImageUrls | null }
+  buyer: { name: string; phone: string | null; cpf: string | null }
+  raffle: {
+    slug: string
+    title: string
+    totalNumbers: number
+    priceCents: number
+    drawDate: string | null
+    cover: ImageUrls | null
+  }
   payment: OrderPayment | null
 }
 
@@ -96,4 +103,24 @@ export type BuyerDraft = {
   wantsAddress: boolean
   address: Required<AddressInput>
   accepted: boolean
+}
+
+// "Meus dados": o cadastro completo, com celular e CPF mascarados.
+export type BuyerAccount = {
+  name: string
+  socialName: string | null
+  firstName: string
+  email: string | null
+  phone: string | null
+  cpf: string | null
+  birthDate: string | null
+  address: (AddressInput & { complement: string | null; reference: string | null }) | null
+  createdAt: string
+}
+
+export type ProfileInput = {
+  name?: string
+  socialName?: string
+  email?: string
+  address?: AddressInput | null
 }

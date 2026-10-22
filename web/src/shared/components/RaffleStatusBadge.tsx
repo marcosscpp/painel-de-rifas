@@ -1,37 +1,44 @@
 import type { ReactNode } from 'react'
-import { LockKeyIcon, NotePencilIcon, PauseCircleIcon, TrophyIcon } from '@phosphor-icons/react'
+import {
+  LockIcon,
+  NotePencilIcon,
+  PauseCircleIcon,
+  SparkleIcon,
+  TrophyIcon,
+} from '@phosphor-icons/react'
 import type { RaffleStatus } from '@/shared/types'
 import { Badge, type BadgeTone } from './Badge'
 
 const statusConfig: Record<
   RaffleStatus,
-  { label: string; tone: BadgeTone; icon?: ReactNode; dot?: boolean; pulse?: boolean }
+  { label: string; tone: BadgeTone; icon: ReactNode; dot?: boolean; pulse?: boolean }
 > = {
   DRAFT: {
     label: 'Rascunho',
     tone: 'neutral',
-    icon: <NotePencilIcon weight="bold" className="size-3.5 text-slate-grey-600" />,
+    icon: <NotePencilIcon className="size-3.5" />,
   },
   ACTIVE: {
     label: 'À venda',
     tone: 'teal',
+    icon: <SparkleIcon weight="fill" className="size-3.5" />,
     dot: true,
     pulse: true,
   },
   PAUSED: {
     label: 'Pausada',
     tone: 'warning',
-    icon: <PauseCircleIcon weight="fill" className="size-3.5 text-warning-600" />,
+    icon: <PauseCircleIcon className="size-3.5" />,
   },
   CLOSED: {
-    label: 'Vendas encerradas',
+    label: 'Encerrada',
     tone: 'error',
-    icon: <LockKeyIcon weight="fill" className="size-3.5 text-error-600" />,
+    icon: <LockIcon className="size-3.5" />,
   },
   DRAWN: {
     label: 'Sorteada',
     tone: 'gold',
-    icon: <TrophyIcon weight="fill" className="size-3.5 text-charcoal-950" />,
+    icon: <TrophyIcon weight="fill" className="size-3.5" />,
   },
 }
 

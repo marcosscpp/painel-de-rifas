@@ -14,8 +14,10 @@ export function CoverSection({ raffle }: { raffle: AdminRaffle }) {
       {raffle.cover ? (
         <img src={raffle.cover.full} alt="Capa da rifa" className="aspect-video w-full max-w-lg rounded-xl object-cover shadow-xs" />
       ) : (
-        <div className="flex aspect-video w-full max-w-lg flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-cream-300 bg-cream-100/60 text-sm text-slate-grey-600">
-          <ImageIcon weight="duotone" className="size-8 text-anzac-500" />
+        <div className="flex aspect-video w-full max-w-lg flex-col items-center justify-center gap-2.5 rounded-xl border border-dashed border-cream-300 bg-cream-100/50 text-sm text-slate-grey-500">
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-white p-3.5 text-watercourse-700 shadow-2xs ring-1 ring-cream-200">
+            <ImageIcon className="size-5" />
+          </div>
           <span>Sem imagem de capa</span>
         </div>
       )}
