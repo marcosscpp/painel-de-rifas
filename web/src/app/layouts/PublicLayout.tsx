@@ -9,7 +9,7 @@ import {
   WalletIcon,
 } from '@phosphor-icons/react'
 import { Link, Outlet } from 'react-router'
-import { AgeSeal, BrandMark } from '@/shared/components'
+import { BrandMark } from '@/shared/components'
 import { env } from '@/shared/config/env'
 import { AccountButton } from './public/AccountButton'
 import { HeaderTab } from './public/nav-items'
@@ -70,8 +70,6 @@ export function PublicLayout() {
       {/* Rodapé clean no estilo da referência */}
       <footer className="mx-auto w-full max-w-4xl px-4 pt-4 pb-10 text-center">
         <div className="flex flex-col items-center gap-5">
-          <AgeSeal age={18} />
-
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-bold text-watercourse-900">
             <span className="inline-flex items-center gap-1.5">
               <TrophyIcon className="size-5 text-anzac-600" />

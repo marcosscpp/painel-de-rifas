@@ -1,6 +1,6 @@
 import { CaretDownIcon, FlaskIcon, QrCodeIcon } from '@phosphor-icons/react'
 import { useState } from 'react'
-import { Alert, Button, CopyButton, Spinner } from '@/shared/components'
+import { Alert, Button, CopyButton, Spinner, Textarea } from '@/shared/components'
 import { cn } from '@/shared/utils/cn'
 import { useSimulatePayment } from '../hooks/useOrder'
 import type { Order } from '../types'
@@ -40,14 +40,15 @@ export function PixPayment({ order }: { order: Order }) {
         ))}
       </ol>
 
-      <textarea
+      <Textarea
         id="pix-copia-e-cola"
         aria-label="Pix copia e cola"
         readOnly
         rows={3}
+        size="sm"
         value={pay.pixCopyPaste}
         onFocus={(e) => e.currentTarget.select()}
-        className="w-full resize-none rounded-xl border border-cream-200 bg-white p-3 font-mono text-xs break-all text-charcoal-900"
+        className="resize-none font-mono break-all"
       />
 
       <CopyButton

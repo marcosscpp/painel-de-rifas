@@ -3,12 +3,10 @@ import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { Alert, Button, ConfirmDialog, MaskedInput } from '@/shared/components'
 import { useZodForm } from '@/shared/hooks/useZodForm'
-import { formatInt } from '@/shared/utils/format'
+import { formatInt, maskDigits } from '@/shared/utils/format'
 import { useDrawConfirm, useDrawPreview } from '../hooks/useDraws'
 import type { DrawInput, DrawRaffle } from '../types'
 import { DrawPreview } from './DrawPreview'
-
-const digits = (max: number) => (v: string) => v.replace(/\D/g, '').slice(0, max)
 
 const schema = z.object({
   contest: z.string().regex(/^\d{1,6}$/, 'Informe o número do concurso'),
@@ -47,11 +45,11 @@ export function DrawForm({ raffle, onDone }: { raffle: DrawRaffle; onDone: () =>
           <MaskedInput
             control={control}
             name="contest"
-            mask={digits(6)}
+            mask={maskDigits(6)}
             label="Concurso"
             inputMode="numeric"
             placeholder="5912"
-            wrapperClassName="flex w-32 flex-col gap-1.5"
+            wrapperClassName="w-32"
           />
           <a
             href="https://loterias.caixa.gov.br/Paginas/Federal.aspx"
@@ -69,7 +67,7 @@ export function DrawForm({ raffle, onDone }: { raffle: DrawRaffle; onDone: () =>
               key={i}
               control={control}
               name={`prizes.${i}`}
-              mask={digits(5)}
+              mask={maskDigits(5)}
               label={`${i + 1}º prêmio`}
               inputMode="numeric"
               placeholder="00000"

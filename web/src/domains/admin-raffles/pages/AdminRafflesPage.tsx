@@ -156,7 +156,6 @@ export function AdminRafflesPage() {
             label="Buscar campanha"
             type="search"
             placeholder="Título ou endereço (slug)"
-            className="bg-white"
             leftIcon={<MagnifyingGlassIcon className="size-4" />}
             rightAdornment={isFetching && !isLoading ? <Spinner className="size-4 text-watercourse-700" /> : undefined}
             value={search}

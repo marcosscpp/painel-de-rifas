@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { CaretLeftIcon, CaretRightIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { Button, Input, Skeleton } from '@/shared/components'
 import { cn } from '@/shared/utils/cn'
-import { formatInt, padNumber } from '@/shared/utils/format'
+import { formatInt, maskDigits, padNumber } from '@/shared/utils/format'
 import { GRID_PAGE, useNumbersPage } from '../hooks/useRaffles'
 
 type Props = {
@@ -75,15 +75,15 @@ export function NumberGrid({ slug, total, selected, max, onToggle }: Props) {
               }}
             >
               <Input
-                type="number"
-                min={0}
-                max={total - 1}
+                inputMode="numeric"
+                enterKeyHint="go"
                 placeholder="Ir para nº"
                 aria-label="Ir para o número"
                 leftIcon={<MagnifyingGlassIcon className="size-4" />}
-                className="w-36 bg-white py-1.5 text-xs"
+                size="sm"
+                wrapperClassName="w-36"
                 value={jump}
-                onChange={(e) => setJump(e.target.value)}
+                onChange={(e) => setJump(maskDigits(String(total - 1).length)(e.target.value))}
               />
             </form>
             <span className="text-xs text-slate-grey-600">{formatInt(total)} cotas</span>

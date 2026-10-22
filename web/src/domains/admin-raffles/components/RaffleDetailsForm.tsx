@@ -1,9 +1,9 @@
 import { Controller } from 'react-hook-form'
 import { FloppyDiskIcon } from '@phosphor-icons/react'
-import { Alert, Button, DateTimeField, Input, Select, Textarea } from '@/shared/components'
+import { Alert, Button, DateTimeField, Input, MaskedInput, Select, Textarea } from '@/shared/components'
 import { useZodForm } from '@/shared/hooks/useZodForm'
 import { isLotteryDay, nextLotteryDraws } from '@/shared/utils/dates'
-import { centsToInput, formatCents, isoToLocalInput, parseMoneyToCents } from '@/shared/utils/format'
+import { centsToInput, formatCents, isoToLocalInput, maskDigits, parseMoneyToCents } from '@/shared/utils/format'
 import { raffleSchema, type RaffleFormValues } from '../schemas'
 import type { AdminRaffle, RaffleInput } from '../types'
 
@@ -80,17 +80,18 @@ export function RaffleDetailsForm({ raffle, submitting, error, submitLabel, onSu
           error={errors.price?.message}
           {...register('price')}
         />
-        <Input
+        <MaskedInput
+          control={control}
+          name="totalNumbers"
+          mask={maskDigits(7)}
           label="Total de números"
-          type="number"
+          inputMode="numeric"
           disabled={locked}
-          error={errors.totalNumbers?.message}
           hint={priceCents && total ? `Arrecadação máxima: ${formatCents(priceCents * total)}` : 'De 10 a 1.000.000'}
-          {...register('totalNumbers')}
         />
         <div className="grid grid-cols-2 gap-4">
-          <Input label="Mín. por pedido" type="number" error={errors.minPerOrder?.message} {...register('minPerOrder')} />
-          <Input label="Máx. por pedido" type="number" error={errors.maxPerOrder?.message} {...register('maxPerOrder')} />
+          <MaskedInput control={control} name="minPerOrder" mask={maskDigits(7)} label="Mín. por pedido" inputMode="numeric" />
+          <MaskedInput control={control} name="maxPerOrder" mask={maskDigits(7)} label="Máx. por pedido" inputMode="numeric" />
         </div>
         <Controller
           control={control}

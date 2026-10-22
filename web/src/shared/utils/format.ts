@@ -38,6 +38,9 @@ export function isoToLocalInput(iso: string | null | undefined): string {
 
 export const localInputToIso = (value: string) => (value ? new Date(value).toISOString() : null)
 
+// Só dígitos, até maxLength: no lugar do type="number" (sem setinhas nem "e").
+export const maskDigits = (maxLength: number) => (value: string) => value.replace(/\D/g, '').slice(0, maxLength)
+
 // Máscara enquanto digita: (11) 98765-4321
 export function maskPhoneInput(value: string) {
   const d = value.replace(/\D/g, '').slice(0, 11)

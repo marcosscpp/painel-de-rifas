@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { FormProvider } from 'react-hook-form'
 import { ArrowLeftIcon, LightningIcon, MapPinIcon, UserCircleIcon } from '@phosphor-icons/react'
-import { Button, Input, MaskedInput } from '@/shared/components'
+import { Button, Checkbox, Input, MaskedInput } from '@/shared/components'
 import { useZodForm } from '@/shared/hooks/useZodForm'
 import { maskCpfInput, maskDateInput, maskPhoneInput } from '@/shared/utils/format'
 import { useCheckoutSettings } from '../hooks/useOrder'
@@ -132,21 +132,15 @@ export function BuyerForm({
           <MaskedInput control={control} name="cpf" mask={maskCpfInput} label="CPF" inputMode="numeric" placeholder="000.000.000-00" />
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-charcoal-900">
-          <input type="checkbox" className="size-4 accent-watercourse-800" {...register('wantsAddress')} />
-          <MapPinIcon className="size-4 text-watercourse-700" />
-          Desejo informar o meu endereço
-        </label>
+        <Checkbox
+          label="Desejo informar o meu endereço"
+          icon={<MapPinIcon className="size-4 text-watercourse-700" />}
+          {...register('wantsAddress')}
+        />
 
         {wantsAddress && <AddressFields />}
 
-        <div>
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-cream-200 bg-cream-100/70 p-3 text-xs text-slate-grey-700">
-            <input type="checkbox" className="mt-0.5 size-4 accent-watercourse-800" {...register('accepted')} />
-            <span>{acceptText(minAge)}</span>
-          </label>
-          {errors.accepted && <p className="mt-1 text-xs font-medium text-error-600">{errors.accepted.message}</p>}
-        </div>
+        <Checkbox boxed label={acceptText(minAge)} error={errors.accepted?.message} {...register('accepted')} />
         <Button type="submit" variant="buy" loading={submitting} className="py-3.5 text-base">
           <LightningIcon weight="fill" className="size-4.5" />
           {submitLabel}

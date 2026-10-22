@@ -1,7 +1,8 @@
 import { type ReactNode, type ComponentProps, useId } from 'react'
 import { CaretDownIcon } from '@phosphor-icons/react'
 import { cn } from '@/shared/utils/cn'
-import { FieldWrap, fieldControlBase } from './Field'
+import { FieldWrap } from './Field'
+import { fieldControl, fieldIcon } from './field-styles'
 
 export type SelectOption = {
   value: string
@@ -35,19 +36,16 @@ export function Select({
   const selectElement = (
     <div className="group relative flex items-center">
       {leftIcon && (
-        <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-grey-400 transition-colors group-focus-within:text-watercourse-700">
-          {leftIcon}
-        </span>
+        <span className={fieldIcon}>{leftIcon}</span>
       )}
       <select
         {...rest}
         id={fieldId}
         aria-invalid={!!error}
         className={cn(
-          fieldControlBase,
-          'cursor-pointer appearance-none bg-white pr-11',
+          fieldControl('md', error),
+          'cursor-pointer appearance-none pr-11',
           Boolean(leftIcon) && 'pl-10',
-          error ? 'border-error-500 focus:border-error-600 focus:ring-error-500/30' : 'border-cream-300',
           className,
         )}
       >

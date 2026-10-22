@@ -1,8 +1,8 @@
 import { useFieldArray } from 'react-hook-form'
 import { FloppyDiskIcon, PlusIcon, SparkleIcon, TrashIcon } from '@phosphor-icons/react'
-import { Alert, Button, Input } from '@/shared/components'
+import { Alert, Button, Checkbox, MaskedInput } from '@/shared/components'
 import { useZodForm } from '@/shared/hooks/useZodForm'
-import { formatCents } from '@/shared/utils/format'
+import { formatCents, maskDigits } from '@/shared/utils/format'
 import { useRaffleMutation } from '../hooks/useAdminRaffles'
 import { packagesSchema } from '../schemas'
 import { adminRafflesApi } from '../services/admin-raffles.api'
@@ -14,13 +14,7 @@ type Items = Array<{ quantity: number; highlighted: boolean }>
 export function PackagesEditor({ raffle }: { raffle: AdminRaffle }) {
   const finished = raffle.status === 'CLOSED' || raffle.status === 'DRAWN'
   const save = useRaffleMutation((items: Items) => adminRafflesApi.setPackages(raffle.id, items))
-  const {
-    control,
-    register,
-    watch,
-    handleSubmit,
-    formState: { errors },
-  } = useZodForm(packagesSchema(raffle.minPerOrder, raffle.maxPerOrder), {
+  const { control, register, watch, handleSubmit } = useZodForm(packagesSchema(raffle.minPerOrder, raffle.maxPerOrder), {
     defaultValues: { rows: raffle.packages.map((p) => ({ quantity: String(p.quantity), highlighted: p.highlighted })) },
   })
   const { fields, append, remove } = useFieldArray({ control, name: 'rows' })
@@ -33,23 +27,26 @@ export function PackagesEditor({ raffle }: { raffle: AdminRaffle }) {
         const qty = Number(rows[i]?.quantity)
         return (
           <div key={field.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-cream-200 bg-cream-100/60 p-3">
-            <Input
-              type="number"
+            <MaskedInput
+              control={control}
+              name={`rows.${i}.quantity`}
+              mask={maskDigits(7)}
+              inputMode="numeric"
               aria-label="Quantidade do pacote"
               placeholder="Qtd."
-              className="w-28 bg-white py-2 font-mono font-bold"
+              className="font-mono font-bold"
+              wrapperClassName="w-28"
               disabled={finished}
-              error={errors.rows?.[i]?.quantity?.message}
-              {...register(`rows.${i}.quantity`)}
             />
             <span className="w-28 text-sm font-semibold text-watercourse-800">
               {qty > 0 ? formatCents(qty * raffle.priceCents) : '-'}
             </span>
-            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-charcoal-900">
-              <input type="checkbox" disabled={finished} className="size-4 accent-anzac-500" {...register(`rows.${i}.highlighted`)} />
-              <SparkleIcon weight="fill" className="size-4 text-anzac-500" />
-              Destaque
-            </label>
+            <Checkbox
+              label="Destaque"
+              icon={<SparkleIcon weight="fill" className="size-4 text-anzac-500" />}
+              disabled={finished}
+              {...register(`rows.${i}.highlighted`)}
+            />
             <Button
               type="button"
               variant="ghost"

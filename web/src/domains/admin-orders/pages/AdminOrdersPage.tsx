@@ -5,6 +5,7 @@ import { type OrderStatus, OrderStatusBadge } from '@/domains/checkout'
 import {
   Alert,
   Card,
+  Checkbox,
   type ColumnDef,
   DataTable,
   EmptyState,
@@ -113,42 +114,40 @@ export function AdminOrdersPage() {
 
       <Card className="mb-4 grid gap-3 p-4 md:grid-cols-[1.5fr_1fr_1fr_auto]">
         <Input
-          aria-label="Buscar"
+          label="Buscar pedido"
+          type="search"
           placeholder="Nome, nº do pedido, ou celular, CPF ou e-mail completo"
           leftIcon={<MagnifyingGlassIcon className="size-4" />}
           value={search}
           onChange={(e) => reset(setSearch)(e.target.value)}
         />
         <Select
-          aria-label="Campanha"
+          label="Campanha"
           value={raffleId}
           onChange={(e) => reset(setRaffleId)(e.target.value)}
           options={[{ value: '', label: 'Todas as campanhas' }, ...(raffles.data ?? []).map((r) => ({ value: r.id, label: r.title }))]}
         />
         <Select
-          aria-label="Status"
+          label="Status"
           value={status}
           onChange={(e) => reset(setStatus)(e.target.value as OrderStatus | '')}
           options={statusOptions}
         />
         <Select
-          aria-label="Itens por página"
+          label="Por página"
           value={String(pageSize)}
           onChange={(e) => reset(setPageSize)(Number(e.target.value))}
           options={pageSizes}
         />
-        <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-charcoal-900 md:col-span-4">
-          <input
-            type="checkbox"
-            checked={refundPending}
-            onChange={(e) => {
-              setParam('reembolso', e.target.checked ? '1' : null)
-              setPage(1)
-            }}
-            className="size-4 accent-watercourse-800"
-          />
-          Só reembolsos pendentes
-        </label>
+        <Checkbox
+          wrapperClassName="md:col-span-4"
+          label="Só reembolsos pendentes"
+          checked={refundPending}
+          onChange={(e) => {
+            setParam('reembolso', e.target.checked ? '1' : null)
+            setPage(1)
+          }}
+        />
       </Card>
 
       {error && <Alert tone="error">{error.message}</Alert>}

@@ -1,13 +1,16 @@
 import { type ComponentProps, type ReactNode, useId } from 'react'
 import { cn } from '@/shared/utils/cn'
-import { FieldWrap, fieldControlBase } from './Field'
+import { FieldWrap } from './Field'
+import { type FieldSize, fieldControl, fieldIcon } from './field-styles'
 
-export type InputProps = ComponentProps<'input'> & {
+export type InputProps = Omit<ComponentProps<'input'>, 'size'> & {
   label?: string
   error?: string
   hint?: string
   leftIcon?: ReactNode
   rightAdornment?: ReactNode
+  size?: FieldSize
+  // Largura e espaçamento ficam no invólucro: classes de tamanho no className não pegam.
   wrapperClassName?: string
 }
 
@@ -17,6 +20,7 @@ export function Input({
   hint,
   leftIcon,
   rightAdornment,
+  size = 'md',
   wrapperClassName,
   className,
   id,
@@ -26,21 +30,16 @@ export function Input({
   const inputId = id ?? autoId
 
   const inputElement = (
-    <div className="relative flex items-center">
-      {leftIcon && (
-        <span className="pointer-events-none absolute left-3.5 flex items-center text-slate-grey-500">
-          {leftIcon}
-        </span>
-      )}
+    <div className="group relative flex items-center">
+      {leftIcon && <span className={fieldIcon}>{leftIcon}</span>}
       <input
         {...rest}
         id={inputId}
         aria-invalid={!!error}
         className={cn(
-          fieldControlBase,
+          fieldControl(size, error),
           Boolean(leftIcon) && 'pl-10',
           Boolean(rightAdornment) && 'pr-10',
-          error ? 'border-error-500 focus:border-error-600 focus:ring-error-500/30' : 'border-cream-300',
           className,
         )}
       />

@@ -1,7 +1,8 @@
 import { CalendarBlankIcon, ClockIcon, XIcon } from '@phosphor-icons/react'
 import { useId } from 'react'
 import { cn } from '@/shared/utils/cn'
-import { FieldWrap, fieldControlBase } from './Field'
+import { FieldWrap } from './Field'
+import { fieldControl, fieldIcon } from './field-styles'
 
 export type DateTimePreset = { label: string; value: () => string }
 
@@ -25,13 +26,15 @@ export function DateTimeField({ label, value, onChange, hint, error, disabled, d
 
   const setDate = (d: string) => onChange(d ? `${d}T${time || defaultTime}` : '')
   const setTime = (t: string) => date && onChange(`${date}T${t || defaultTime}`)
-  const border = error ? 'border-error-500 focus:border-error-600 focus:ring-error-500/30' : 'border-cream-300'
+  const control = cn(fieldControl('md', error), 'pl-10 [&::-webkit-calendar-picker-indicator]:hidden')
 
   return (
     <FieldWrap label={label} error={error} hint={hint} id={id}>
       <div className="flex gap-2">
-        <div className="relative flex flex-1 items-center">
-          <CalendarBlankIcon weight="duotone" className="pointer-events-none absolute left-3.5 size-4 text-slate-grey-500" />
+        <div className="group relative flex flex-1 items-center">
+          <span className={fieldIcon}>
+            <CalendarBlankIcon weight="duotone" className="size-4" />
+          </span>
           <input
             id={id}
             type="date"
@@ -40,18 +43,20 @@ export function DateTimeField({ label, value, onChange, hint, error, disabled, d
             aria-invalid={!!error}
             onChange={(e) => setDate(e.target.value)}
             onClick={(e) => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()}
-            className={cn(fieldControlBase, border, 'pl-10 [&::-webkit-calendar-picker-indicator]:hidden')}
+            className={control}
           />
         </div>
-        <div className="relative flex w-32 items-center">
-          <ClockIcon weight="duotone" className="pointer-events-none absolute left-3.5 size-4 text-slate-grey-500" />
+        <div className="group relative flex w-32 shrink-0 items-center">
+          <span className={fieldIcon}>
+            <ClockIcon weight="duotone" className="size-4" />
+          </span>
           <input
             type="time"
             aria-label={`${label}: horário`}
             value={time}
             disabled={disabled || !date}
             onChange={(e) => setTime(e.target.value)}
-            className={cn(fieldControlBase, border, 'pl-10 [&::-webkit-calendar-picker-indicator]:hidden')}
+            className={control}
           />
         </div>
         {value && !disabled && (
@@ -59,7 +64,7 @@ export function DateTimeField({ label, value, onChange, hint, error, disabled, d
             type="button"
             onClick={() => onChange('')}
             aria-label={`Limpar ${label.toLowerCase()}`}
-            className="shrink-0 rounded-xl border border-cream-300 px-3 text-slate-grey-500 transition hover:bg-cream-100 hover:text-error-600"
+            className="shrink-0 rounded-xl border border-cream-300 px-3 text-slate-grey-500 transition outline-none hover:bg-cream-100 hover:text-error-600 focus-visible:ring-2 focus-visible:ring-anzac-400/45"
           >
             <XIcon weight="bold" className="size-4" />
           </button>

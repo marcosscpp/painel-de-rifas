@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { LightningIcon, ShieldCheckIcon, UserCheckIcon } from '@phosphor-icons/react'
-import { Button, Spinner } from '@/shared/components'
+import { Button, Checkbox, Spinner } from '@/shared/components'
 import { useBuyerLogout, useBuyerSession } from '../hooks/useBuyer'
 import { useCheckoutSettings } from '../hooks/useOrder'
 import type { BuyerDraft, BuyerInput } from '../types'
@@ -62,16 +62,13 @@ export function CheckoutPanel({ draft, onDraftChange, submitLabel, submitting, o
           <ShieldCheckIcon weight="fill" className="size-3.5 text-watercourse-700" />
           Seus dados já estão salvos. Os números ficam no seu cadastro.
         </p>
-        <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-cream-200 bg-cream-100/70 p-3 text-xs text-slate-grey-700">
-          <input
-            type="checkbox"
-            required
-            checked={accepted}
-            onChange={(e) => setAccepted(e.target.checked)}
-            className="mt-0.5 size-4 accent-watercourse-800"
-          />
-          <span>Declaro ter {minAge} anos ou mais e que li e concordo com o regulamento da campanha.</span>
-        </label>
+        <Checkbox
+          boxed
+          required
+          checked={accepted}
+          onChange={(e) => setAccepted(e.target.checked)}
+          label={`Declaro ter ${minAge} anos ou mais e que li e concordo com o regulamento da campanha.`}
+        />
         <Button type="submit" variant="buy" loading={submitting} className="py-3.5 text-base">
           <LightningIcon weight="fill" className="size-4.5" />
           {submitLabel}

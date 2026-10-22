@@ -12,7 +12,7 @@ import { type BuyerDraft, type BuyerInput, CheckoutPanel, emptyBuyer, useCreateO
 import { Alert, Button, Card, Input, Modal } from '@/shared/components'
 import { ApiError } from '@/shared/lib/http'
 import { cn } from '@/shared/utils/cn'
-import { formatCents, padNumber } from '@/shared/utils/format'
+import { formatCents, maskDigits, padNumber } from '@/shared/utils/format'
 import type { RaffleDetail } from '../types'
 
 export type BuyMode = 'quantity' | 'pick'
@@ -140,13 +140,13 @@ export function BuyBox({ raffle, mode, selected, onDeselect }: Props) {
                 <MinusIcon weight="bold" className="size-4" />
               </Button>
               <Input
-                type="number"
+                inputMode="numeric"
                 aria-label="Quantidade de números"
-                className="w-28 bg-white px-3 py-2 text-center font-mono text-lg font-bold"
+                size="lg"
+                className="text-center font-mono font-bold"
+                wrapperClassName="w-28"
                 value={qty}
-                min={raffle.minPerOrder}
-                max={raffle.maxPerOrder}
-                onChange={(e) => setQty(Number(e.target.value))}
+                onChange={(e) => setQty(Number(maskDigits(7)(e.target.value)))}
                 onBlur={() => setQty((q) => clamp(q))}
               />
               <Button

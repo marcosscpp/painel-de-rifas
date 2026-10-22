@@ -10,7 +10,7 @@ import {
   useBuyerSession,
   useUpdateProfile,
 } from '@/domains/checkout'
-import { Alert, Button, Card, FullPageSpinner, InfoList, Input, PageHeader } from '@/shared/components'
+import { Alert, Button, Card, Checkbox, FullPageSpinner, InfoList, Input, PageHeader } from '@/shared/components'
 import { useZodForm } from '@/shared/hooks/useZodForm'
 import { formatDate } from '@/shared/utils/format'
 import { AccountTabs } from '../components/AccountTabs'
@@ -63,11 +63,11 @@ function ProfileForm({ profile }: { profile: BuyerAccount }) {
         <Input label="Nome completo" maxLength={80} error={errors.name?.message} {...register('name')} />
         <Input label="Nome social (opcional)" maxLength={80} error={errors.socialName?.message} {...register('socialName')} />
         <Input label="E-mail" type="email" error={errors.email?.message} {...register('email')} />
-        <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-charcoal-900">
-          <input type="checkbox" className="size-4 accent-watercourse-800" {...register('wantsAddress')} />
-          <MapPinIcon className="size-4 text-watercourse-700" />
-          Informar meu endereço
-        </label>
+        <Checkbox
+          label="Informar meu endereço"
+          icon={<MapPinIcon className="size-4 text-watercourse-700" />}
+          {...register('wantsAddress')}
+        />
         {wantsAddress && <AddressFields />}
         {update.error && <Alert tone="error">{update.error.message}</Alert>}
         {update.isSuccess && !isDirty && <Alert tone="success">Dados atualizados.</Alert>}

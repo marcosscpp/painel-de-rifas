@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { Alert, Button, Card, FullPageSpinner, Input, MaskedInput, PageHeader, Select } from '@/shared/components'
 import { useZodForm } from '@/shared/hooks/useZodForm'
 import { onlyDigits, zIntString, zOptionalHttps } from '@/shared/lib/validators'
-import { centsToInput, formatCents, maskPhoneInput, parseMoneyToCents } from '@/shared/utils/format'
+import { centsToInput, formatCents, maskDigits, maskPhoneInput, parseMoneyToCents } from '@/shared/utils/format'
 import { useAdminSettings, useSaveSettings } from '../hooks/useSettings'
 import type { SiteSettings } from '../types'
 
@@ -85,12 +85,13 @@ function SettingsForm({ initial }: { initial: SiteSettings }) {
             hint={feeCents ? `O comprador paga ${formatCents(feeCents)} a mais em cada pedido` : 'Sem taxa para o comprador'}
             {...register('pixFee')}
           />
-          <Input
+          <MaskedInput
+            control={control}
+            name="reservationMinutes"
+            mask={maskDigits(2)}
             label="Tempo para pagar (minutos)"
-            type="number"
-            error={errors.reservationMinutes?.message}
+            inputMode="numeric"
             hint="Depois disso os números voltam para a venda (5 a 60)"
-            {...register('reservationMinutes')}
           />
           <Select label="Idade mínima do comprador" options={ages} {...register('minBuyerAge')} />
         </div>
