@@ -37,12 +37,14 @@ export function PrizesEditor({ raffle }: { raffle: AdminRaffle }) {
           noValidate
           className="flex flex-wrap items-end gap-3 rounded-2xl border border-dashed border-cream-300 bg-cream-100/70 p-4"
         >
-          <div className="min-w-56 flex-1">
-            <Input label="Novo prêmio" placeholder="Ex.: Onix 0km" error={errors.title?.message} {...register('title')} />
-          </div>
-          <div className="w-56">
-            <Select label="Tipo" options={prizeKinds} {...register('kind')} />
-          </div>
+          <Input
+            label="Novo prêmio"
+            placeholder="Ex.: Onix 0km"
+            wrapperClassName="min-w-56 flex-1"
+            error={errors.title?.message}
+            {...register('title')}
+          />
+          <Select label="Tipo" options={prizeKinds} wrapperClassName="w-56" {...register('kind')} />
           <Button type="submit" loading={create.isPending}>
             <PlusIcon weight="bold" className="size-4" />
             Adicionar
