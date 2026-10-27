@@ -14,12 +14,14 @@ export function DrawResultCard({ result, totalNumbers }: { result: RaffleResult;
         </div>
         <div className="min-w-0">
           <p className="text-xs font-bold tracking-wider text-anzac-300 uppercase">Resultado oficial</p>
-          <p className="font-wide text-lg font-extrabold">
-            Número premiado:{' '}
-            <span className="font-mono text-anzac-300">
-              {result.winningNumber === null ? '—' : padNumber(result.winningNumber, totalNumbers)}
-            </span>
-          </p>
+          {result.winningNumber === null ? (
+            <p className="font-wide text-lg font-extrabold">Sem ganhador</p>
+          ) : (
+            <p className="font-wide text-lg font-extrabold">
+              Número premiado:{' '}
+              <span className="font-mono text-anzac-300">{padNumber(result.winningNumber, totalNumbers)}</span>
+            </p>
+          )}
           {result.winnerName && <p className="text-sm font-semibold">Ganhador: {result.winnerName}</p>}
           <p className="text-xs text-cream-100/80">
             Concurso {result.lotteryContest} da Loteria Federal

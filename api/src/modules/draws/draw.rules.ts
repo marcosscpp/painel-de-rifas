@@ -8,7 +8,7 @@
 // - D = 6 ou 7: o prêmio inteiro com o último dígito do(s) prêmio(s) seguinte(s) na frente.
 //   Ex. D = 6: candidato 1 = último dígito do 2º prêmio + 1º prêmio.
 // Ganha o primeiro candidato que existe na rifa e foi vendido (pago). Se nenhum dos 5 servir,
-// vale o primeiro número vendido acima do 1º candidato (voltando ao 0 no fim).
+// ninguém ganha: não passa para o número vendido mais próximo.
 //
 // Essa é a regra padrão do sistema. Ela precisa estar escrita igual no regulamento de cada rifa.
 
@@ -32,17 +32,12 @@ export type DrawOutcome = {
   digits: number;
   steps: DrawStep[];
   winningNumber: number | null;
-  // 'prize' = saiu direto de um prêmio; 'next-sold' = nenhum prêmio serviu, foi o próximo vendido
-  method: 'prize' | 'next-sold' | 'none';
+  // 'prize' = saiu de um prêmio; 'none' = nenhum prêmio caiu num número vendido, sem ganhador
+  method: 'prize' | 'none';
 };
 
-// isSold: se o número foi pago. nextSold: primeiro número pago >= n (com volta ao início), ou null.
-export function resolveWinner(
-  prizes: string[],
-  totalNumbers: number,
-  isSold: (n: number) => boolean,
-  nextSold: (from: number) => number | null,
-): DrawOutcome {
+// isSold: se o número foi pago.
+export function resolveWinner(prizes: string[], totalNumbers: number, isSold: (n: number) => boolean): DrawOutcome {
   const cands = candidates(prizes, totalNumbers);
   const steps: DrawStep[] = [];
   let winner: number | null = null;
@@ -55,22 +50,12 @@ export function resolveWinner(
     steps.push({ prize: i + 1, candidate: c, outcome: 'winner' });
   });
 
-  if (winner !== null) return { digits: digitsFor(totalNumbers), steps, winningNumber: winner, method: 'prize' };
-  const fallback = nextSold(cands[0] % totalNumbers);
-  return {
-    digits: digitsFor(totalNumbers),
-    steps,
-    winningNumber: fallback,
-    method: fallback === null ? 'none' : 'next-sold',
-  };
+  return { digits: digitsFor(totalNumbers), steps, winningNumber: winner, method: winner === null ? 'none' : 'prize' };
 }
 
 // Texto curto para o público entender de onde saiu o número.
 export function explain(o: DrawOutcome, pad: (n: number) => string): string {
-  if (o.winningNumber === null) return 'Nenhum número vendido.';
-  if (o.method === 'prize') {
-    const step = o.steps.find((s) => s.outcome === 'winner')!;
-    return `Número ${pad(o.winningNumber)}, formado pelo ${step.prize}º prêmio da Loteria Federal.`;
-  }
-  return `Nenhum dos 5 prêmios caiu num número vendido; vale o próximo número vendido: ${pad(o.winningNumber)}.`;
+  if (o.winningNumber === null) return 'Nenhum dos 5 prêmios da Loteria Federal caiu num número vendido: não houve ganhador.';
+  const step = o.steps.find((s) => s.outcome === 'winner')!;
+  return `Número ${pad(o.winningNumber)}, formado pelo ${step.prize}º prêmio da Loteria Federal.`;
 }

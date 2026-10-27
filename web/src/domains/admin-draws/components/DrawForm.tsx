@@ -89,12 +89,10 @@ export function DrawForm({ raffle, onDone }: { raffle: DrawRaffle; onDone: () =>
       {preview.data && checked && (
         <>
           <DrawPreview outcome={preview.data} prizes={checked.prizes} />
-          {preview.data.winningNumber !== null && (
-            <Button variant="buy" className="self-start" onClick={() => setConfirming(true)}>
-              <MegaphoneIcon weight="fill" className="size-4" />
-              Publicar resultado
-            </Button>
-          )}
+          <Button variant="buy" className="self-start" onClick={() => setConfirming(true)}>
+            <MegaphoneIcon weight="fill" className="size-4" />
+            {preview.data.winningNumber === null ? 'Publicar sem ganhador' : 'Publicar resultado'}
+          </Button>
         </>
       )}
 
@@ -118,10 +116,17 @@ export function DrawForm({ raffle, onDone }: { raffle: DrawRaffle; onDone: () =>
           })
         }
       >
-        <p>
-          O número <strong>{preview.data?.winningLabel}</strong> do concurso {checked?.contest} vai aparecer como
-          resultado oficial na página da campanha. Isso não pode ser desfeito.
-        </p>
+        {preview.data?.winningLabel ? (
+          <p>
+            O número <strong>{preview.data.winningLabel}</strong> do concurso {checked?.contest} vai aparecer como
+            resultado oficial na página da campanha. Isso não pode ser desfeito.
+          </p>
+        ) : (
+          <p>
+            Nenhum prêmio do concurso {checked?.contest} caiu num número vendido. A campanha vai aparecer como sorteada,
+            <strong> sem ganhador</strong>. Isso não pode ser desfeito.
+          </p>
+        )}
       </ConfirmDialog>
     </div>
   )

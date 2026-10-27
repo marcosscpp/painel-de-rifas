@@ -11,7 +11,7 @@ export type DrawStep = {
 export type DrawOutcome = {
   raffle: { id: string; title: string; totalNumbers: number }
   digits: number
-  method: 'prize' | 'next-sold' | 'none'
+  method: 'prize' | 'none' // 'none': nenhum prêmio caiu num número vendido, sem ganhador
   steps: DrawStep[]
   winningNumber: number | null
   winningLabel: string | null

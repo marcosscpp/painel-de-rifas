@@ -11,7 +11,7 @@ describe('DrawsService', () => {
   beforeEach(() => {
     const base = makePrisma();
     prisma = Object.assign(base, {
-      raffleNumber: { findMany: vi.fn().mockResolvedValue([]), findFirst: vi.fn().mockResolvedValue(null), findUnique: vi.fn() },
+      raffleNumber: { findMany: vi.fn().mockResolvedValue([]), findUnique: vi.fn() },
     });
     service = new DrawsService(prisma as never, makeCipher());
     prisma.raffle.findUnique.mockResolvedValue({ id: 'r1', status: 'CLOSED', totalNumbers: 10_000, title: 'Onix' });
@@ -65,7 +65,13 @@ describe('DrawsService', () => {
     await expect(service.confirm('r1', dto)).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('sem número vendido não publica', async () => {
-    await expect(service.confirm('r1', dto)).rejects.toThrow('Nenhum número vendido');
+  it('nenhum prêmio vendido: publica sem ganhador', async () => {
+    prisma.raffle.updateMany.mockResolvedValueOnce({ count: 1 });
+    const out = await service.confirm('r1', dto);
+    expect(out).toMatchObject({ winningNumber: null, method: 'none', winner: null });
+    expect(prisma.raffle.updateMany).toHaveBeenCalledWith({
+      where: { id: 'r1', status: 'CLOSED' },
+      data: expect.objectContaining({ status: 'DRAWN', winningNumber: null, winnerOrderId: null, winnerPublicName: null }),
+    });
   });
 });

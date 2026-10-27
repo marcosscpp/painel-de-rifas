@@ -1,4 +1,4 @@
-import { lockedFieldsTouched, nextStatus, publishProblems, slugify } from './raffle.rules.js';
+import { endsAtInPast, lockedFieldsTouched, nextStatus, publishProblems, slugify } from './raffle.rules.js';
 
 describe('raffle.rules', () => {
   it('só permite transições válidas', () => {
@@ -14,11 +14,18 @@ describe('raffle.rules', () => {
   it('detecta campos travados alterados', () => {
     const current = { priceCents: 1000, totalNumbers: 100, title: 'A' };
     expect(lockedFieldsTouched(current, { title: 'B' })).toEqual([]);
-    expect(lockedFieldsTouched(current, { priceCents: 1000 })).toEqual([]);
-    expect(lockedFieldsTouched(current, { priceCents: 500, totalNumbers: 200 })).toEqual([
-      'totalNumbers',
-      'priceCents',
-    ]);
+    expect(lockedFieldsTouched(current, { totalNumbers: 100 })).toEqual([]);
+    expect(lockedFieldsTouched(current, { priceCents: 500, totalNumbers: 200 })).toEqual(['totalNumbers']);
+  });
+
+  it('fim das vendas novo precisa ser futuro', () => {
+    const now = new Date('2026-10-27T12:00:00Z');
+    const past = new Date('2026-10-26T12:00:00Z');
+    expect(endsAtInPast(past, null, now)).toBe(true);
+    expect(endsAtInPast(new Date('2026-10-28T12:00:00Z'), null, now)).toBe(false);
+    expect(endsAtInPast(past, new Date(past), now)).toBe(false); // data já gravada
+    expect(endsAtInPast(null, past, now)).toBe(false);
+    expect(endsAtInPast(undefined, null, now)).toBe(false);
   });
 
   it('lista o que falta para publicar', () => {

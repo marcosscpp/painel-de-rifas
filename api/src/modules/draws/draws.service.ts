@@ -33,11 +33,11 @@ export class DrawsService {
   }
 
   // Publica o resultado. Só uma vez: o UPDATE exige a rifa ainda em CLOSED.
+  // Sem ganhador (nenhum prêmio caiu num número vendido) também publica: a rifa fica sorteada, sem ganhador.
   async confirm(raffleId: string, dto: DrawDto) {
     return this.prisma.$transaction(async (tx) => {
       const raffle = await this.closedRaffle(tx, raffleId);
       const outcome = await this.compute(tx, raffle, dto.prizes);
-      if (outcome.winningNumber === null) throw new ConflictException('Nenhum número vendido: não há ganhador');
       const winner = await this.winnerOf(tx, raffle.id, outcome.winningNumber);
       const pad = (n: number) => String(n).padStart(outcome.digits, '0');
 
@@ -68,7 +68,7 @@ export class DrawsService {
   }
 
   private async compute(db: Db, raffle: { id: string; totalNumbers: number }, prizes: string[]): Promise<DrawOutcome> {
-    // Busca de uma vez o status dos 5 candidatos e o próximo vendido, para a regra rodar em memória.
+    // Busca de uma vez o status dos 5 candidatos, para a regra rodar em memória.
     const sold = new Set(
       (
         await db.raffleNumber.findMany({
@@ -77,30 +77,7 @@ export class DrawsService {
         })
       ).map((n) => n.number),
     );
-    const nextSoldCache = new Map<number, number | null>();
-    const nextSold = async (from: number) => {
-      if (nextSoldCache.has(from)) return nextSoldCache.get(from)!;
-      const above = await db.raffleNumber.findFirst({
-        where: { raffleId: raffle.id, status: 'PAID', number: { gte: from } },
-        orderBy: { number: 'asc' },
-        select: { number: true },
-      });
-      const found =
-        above?.number ??
-        (
-          await db.raffleNumber.findFirst({
-            where: { raffleId: raffle.id, status: 'PAID' },
-            orderBy: { number: 'asc' },
-            select: { number: true },
-          })
-        )?.number ??
-        null;
-      nextSoldCache.set(from, found);
-      return found;
-    };
-    // resolveWinner é síncrono: pré-carrega o "próximo vendido" do 1º candidato (o único que ele consulta).
-    await nextSold(candidates(prizes, raffle.totalNumbers)[0] % raffle.totalNumbers);
-    return resolveWinner(prizes, raffle.totalNumbers, (n) => sold.has(n), (from) => nextSoldCache.get(from) ?? null);
+    return resolveWinner(prizes, raffle.totalNumbers, (n) => sold.has(n));
   }
 
   private async winnerOf(db: Db, raffleId: string, number: number | null) {

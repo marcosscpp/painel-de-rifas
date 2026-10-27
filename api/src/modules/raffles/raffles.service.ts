@@ -10,6 +10,7 @@ import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import { type UploadedImage, UploadsService } from '../uploads/uploads.service.js';
 import type { CreateRaffleDto, ListRafflesQuery, SetPackagesDto, UpdateRaffleDto } from './dto/raffle.dto.js';
 import {
+  endsAtInPast,
   isFinished,
   lockedFieldsTouched,
   nextStatus,
@@ -30,6 +31,8 @@ export type RaffleFull = Prisma.RaffleGetPayload<{ include: typeof fullInclude }
 
 const toDate = (v: string | null | undefined) =>
   v === undefined ? undefined : v === null ? null : new Date(v);
+
+const END_IN_PAST = 'O fim das vendas precisa ser uma data futura';
 
 @Injectable()
 export class RafflesService {
@@ -117,6 +120,7 @@ export class RafflesService {
     const min = dto.minPerOrder ?? 1;
     const max = dto.maxPerOrder ?? Math.min(1000, dto.totalNumbers);
     this.assertLimits(min, max, dto.totalNumbers);
+    if (endsAtInPast(toDate(dto.endsAt), null)) throw new BadRequestException(END_IN_PAST);
 
     return this.prisma.raffle.create({
       data: {
@@ -145,6 +149,8 @@ export class RafflesService {
       endsAt: toDate(dto.endsAt),
       drawDate: toDate(dto.drawDate),
     };
+
+    if (endsAtInPast(data.endsAt, current.endsAt)) throw new BadRequestException(END_IN_PAST);
 
     if (current.status !== 'DRAFT') {
       const touched = lockedFieldsTouched(current, data);

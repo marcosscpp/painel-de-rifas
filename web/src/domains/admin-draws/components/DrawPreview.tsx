@@ -47,7 +47,7 @@ export function DrawPreview({ outcome, prizes }: { outcome: DrawOutcome; prizes:
           <CheckCircleIcon weight="fill" className="size-8 text-anzac-600" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-slate-grey-600">
-              Número premiado {outcome.method === 'next-sold' && '(próximo vendido)'}
+              Número premiado
             </p>
             <p className="font-wide font-mono text-2xl font-extrabold text-charcoal-900">{outcome.winningLabel}</p>
             {w && (

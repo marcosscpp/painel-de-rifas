@@ -88,12 +88,27 @@ describe('RafflesService', () => {
       expect(prisma.raffle.update).toHaveBeenCalled();
     });
 
-    it('publicada não muda preço, total, modo de venda nem slug', async () => {
+    it('publicada não muda total, modo de venda nem slug', async () => {
       prisma.raffle.findUnique.mockResolvedValue(draft({ status: 'ACTIVE' }));
-      await expect(service.update('r1', { priceCents: 500 })).rejects.toThrow('priceCents');
+      await expect(service.update('r1', { totalNumbers: 500 })).rejects.toThrow('totalNumbers');
       await expect(service.update('r1', { saleMode: 'PICK' })).rejects.toThrow('saleMode');
       await expect(service.update('r1', { slug: 'outro' })).rejects.toThrow('slug');
       expect(prisma.raffle.update).not.toHaveBeenCalled();
+    });
+
+    it('publicada pode mudar o preço (vale para pedidos novos)', async () => {
+      prisma.raffle.findUnique.mockResolvedValue(draft({ status: 'ACTIVE' }));
+      await service.update('r1', { priceCents: 500 });
+      expect(prisma.raffle.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ priceCents: 500 }) }));
+    });
+
+    it('fim das vendas novo no passado é recusado; a data já gravada pode ser reenviada', async () => {
+      const past = new Date(Date.now() - 86_400_000);
+      await expect(service.update('r1', { endsAt: past.toISOString() })).rejects.toThrow('data futura');
+      await expect(service.create({ ...draft(), endsAt: past.toISOString() } as never)).rejects.toThrow('data futura');
+      prisma.raffle.findUnique.mockResolvedValue(draft({ status: 'ACTIVE', endsAt: past }));
+      await service.update('r1', { endsAt: past.toISOString(), title: 'Outro' });
+      expect(prisma.raffle.update).toHaveBeenCalled();
     });
 
     it('publicada aceita reenviar os mesmos valores travados junto com texto novo', async () => {

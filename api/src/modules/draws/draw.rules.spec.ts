@@ -30,28 +30,30 @@ describe('draw.rules', () => {
 
   it('ganha o primeiro prêmio que caiu num número vendido', () => {
     const sold = new Set([7890, 3579]);
-    const o = resolveWinner(prizes, 10_000, (n) => sold.has(n), () => null);
+    const o = resolveWinner(prizes, 10_000, (n) => sold.has(n));
     expect(o.winningNumber).toBe(7890);
     expect(o.method).toBe('prize');
     expect(o.steps.map((s) => s.outcome)).toEqual(['not-sold', 'winner', 'skipped', 'skipped', 'skipped']);
   });
 
   it('número fora da rifa é pulado (rifa de 5.000 com prêmio 7890)', () => {
-    const o = resolveWinner(prizes, 5_000, () => true, () => null);
+    const o = resolveWinner(prizes, 5_000, () => true);
     // 5.000 números → 4 dígitos: 2345 vale
     expect(o.winningNumber).toBe(2345);
-    const o2 = resolveWinner(['99999', '98765', '12345', '00000', '11111'], 5_000, () => true, () => null);
+    const o2 = resolveWinner(['99999', '98765', '12345', '00000', '11111'], 5_000, () => true);
     expect(o2.steps[0].outcome).toBe('out-of-range');
     expect(o2.winningNumber).toBe(2345);
   });
 
-  it('nenhum prêmio vendido: vale o próximo número vendido acima do 1º candidato', () => {
-    const o = resolveWinner(prizes, 10_000, () => false, (from) => (from === 2345 ? 2400 : null));
-    expect(o).toMatchObject({ winningNumber: 2400, method: 'next-sold' });
-    expect(explain(o, (n) => String(n).padStart(4, '0'))).toContain('próximo número vendido: 2400');
+  it('nenhum prêmio vendido: ninguém ganha (não passa para o vendido mais próximo)', () => {
+    const sold = new Set([2346, 7891]); // vizinhos dos candidatos não contam
+    const o = resolveWinner(prizes, 10_000, (n) => sold.has(n));
+    expect(o).toMatchObject({ winningNumber: null, method: 'none' });
+    expect(o.steps.map((s) => s.outcome)).toEqual(['not-sold', 'not-sold', 'not-sold', 'not-sold', 'not-sold']);
+    expect(explain(o, (n) => String(n))).toContain('não houve ganhador');
   });
 
   it('nada vendido', () => {
-    expect(resolveWinner(prizes, 10_000, () => false, () => null)).toMatchObject({ winningNumber: null, method: 'none' });
+    expect(resolveWinner(prizes, 10_000, () => false)).toMatchObject({ winningNumber: null, method: 'none' });
   });
 });

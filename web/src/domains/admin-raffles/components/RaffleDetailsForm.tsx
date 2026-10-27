@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { Controller } from 'react-hook-form'
 import { FloppyDiskIcon } from '@phosphor-icons/react'
 import { Alert, Button, DateTimeField, Input, MaskedInput, Select, Textarea } from '@/shared/components'
@@ -36,15 +37,18 @@ const toForm = (raffle?: AdminRaffle): RaffleFormValues => ({
 })
 
 export function RaffleDetailsForm({ raffle, submitting, error, submitLabel, onSubmit }: Props) {
-  // Depois de publicada, preço, total de números e modo de venda ficam travados (a API também recusa).
+  // Depois de publicada, total de números e modo de venda ficam travados (a API também recusa).
+  // O preço pode mudar: vale só para pedidos novos.
   const locked = !!raffle && raffle.status !== 'DRAFT'
+  const schema = useMemo(() => raffleSchema(isoToLocalInput(raffle?.endsAt)), [raffle?.endsAt])
+  const [today] = useState(() => new Date().toLocaleDateString('sv-SE')) // AAAA-MM-DD no fuso local
   const {
     control,
     register,
     watch,
     handleSubmit,
     formState: { errors },
-  } = useZodForm(raffleSchema, { defaultValues: toForm(raffle) })
+  } = useZodForm(schema, { defaultValues: toForm(raffle) })
 
   const [price, totalNumbers, slug, drawDate] = watch(['price', 'totalNumbers', 'slug', 'drawDate'])
   const priceCents = parseMoneyToCents(price)
@@ -76,7 +80,7 @@ export function RaffleDetailsForm({ raffle, submitting, error, submitLabel, onSu
           label="Preço por número (R$)"
           inputMode="decimal"
           placeholder="1,99"
-          disabled={locked}
+          hint={locked ? 'Vale só para pedidos novos.' : undefined}
           error={errors.price?.message}
           {...register('price')}
         />
@@ -102,7 +106,8 @@ export function RaffleDetailsForm({ raffle, submitting, error, submitLabel, onSu
               value={field.value}
               onChange={field.onChange}
               defaultTime="18:00"
-              hint="Opcional. Depois disso a rifa para de vender."
+              min={today}
+              hint="Opcional. Precisa ser no futuro. Depois disso a rifa para de vender."
               error={fieldState.error?.message}
             />
           )}
@@ -123,7 +128,7 @@ export function RaffleDetailsForm({ raffle, submitting, error, submitLabel, onSu
       </div>
 
       {locked && (
-        <Alert tone="info">Rifa publicada: preço, total de números, modo de venda e endereço não mudam mais.</Alert>
+        <Alert tone="info">Rifa publicada: total de números, modo de venda e endereço não mudam mais.</Alert>
       )}
       {error && <Alert tone="error">{error}</Alert>}
 

@@ -6,44 +6,49 @@ import type { PrizeInput, RaffleInput } from './types'
 const slugRegex = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 // Dados da rifa. Datas chegam como "AAAA-MM-DDTHH:mm" (vazio = sem data).
-export const raffleSchema = z
-  .object({
-    title: z.string().trim().min(3, 'Mínimo de 3 caracteres').max(120),
-    slug: z.string().trim().refine((v) => v === '' || slugRegex.test(v), 'Use só letras minúsculas, números e hífen'),
-    description: z.string().trim().min(1, 'Escreva uma descrição').max(10000),
-    rules: z.string().trim().max(50000),
-    saleMode: z.enum(['QUANTITY', 'PICK']),
-    totalNumbers: zIntString(10, 1_000_000, 'De 10 a 1.000.000'),
-    price: zMoney.refine((c) => c > 0, 'O preço precisa ser maior que zero'),
-    minPerOrder: zIntString(1, 1_000_000, 'Mínimo de 1'),
-    maxPerOrder: zIntString(1, 1_000_000, 'Mínimo de 1'),
-    endsAt: z.string(),
-    drawDate: z.string(),
-  })
-  .superRefine((v, ctx) => {
-    if (v.maxPerOrder < v.minPerOrder) {
-      ctx.addIssue({ code: 'custom', path: ['maxPerOrder'], message: 'Precisa ser maior ou igual ao mínimo' })
-    }
-    if (v.endsAt && v.drawDate && new Date(v.endsAt) > new Date(v.drawDate)) {
-      ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'O fim das vendas precisa ser antes do sorteio.' })
-    }
-  })
-  .transform(
-    (v): RaffleInput => ({
-      title: v.title,
-      ...(v.slug && { slug: v.slug }),
-      description: v.description,
-      rules: v.rules,
-      saleMode: v.saleMode,
-      totalNumbers: v.totalNumbers,
-      priceCents: v.price,
-      minPerOrder: v.minPerOrder,
-      maxPerOrder: v.maxPerOrder,
-      endsAt: localInputToIso(v.endsAt),
-      drawDate: localInputToIso(v.drawDate),
-    }),
-  )
-export type RaffleFormValues = z.input<typeof raffleSchema>
+// savedEndsAt: o fim das vendas já gravado; só um valor novo precisa estar no futuro.
+export const raffleSchema = (savedEndsAt = '') =>
+  z
+    .object({
+      title: z.string().trim().min(3, 'Mínimo de 3 caracteres').max(120),
+      slug: z.string().trim().refine((v) => v === '' || slugRegex.test(v), 'Use só letras minúsculas, números e hífen'),
+      description: z.string().trim().min(1, 'Escreva uma descrição').max(10000),
+      rules: z.string().trim().max(50000),
+      saleMode: z.enum(['QUANTITY', 'PICK']),
+      totalNumbers: zIntString(10, 1_000_000, 'De 10 a 1.000.000'),
+      price: zMoney.refine((c) => c > 0, 'O preço precisa ser maior que zero'),
+      minPerOrder: zIntString(1, 1_000_000, 'Mínimo de 1'),
+      maxPerOrder: zIntString(1, 1_000_000, 'Mínimo de 1'),
+      endsAt: z.string(),
+      drawDate: z.string(),
+    })
+    .superRefine((v, ctx) => {
+      if (v.maxPerOrder < v.minPerOrder) {
+        ctx.addIssue({ code: 'custom', path: ['maxPerOrder'], message: 'Precisa ser maior ou igual ao mínimo' })
+      }
+      if (v.endsAt && v.endsAt !== savedEndsAt && new Date(v.endsAt) <= new Date()) {
+        ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'O fim das vendas precisa ser no futuro.' })
+      }
+      if (v.endsAt && v.drawDate && new Date(v.endsAt) > new Date(v.drawDate)) {
+        ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'O fim das vendas precisa ser antes do sorteio.' })
+      }
+    })
+    .transform(
+      (v): RaffleInput => ({
+        title: v.title,
+        ...(v.slug && { slug: v.slug }),
+        description: v.description,
+        rules: v.rules,
+        saleMode: v.saleMode,
+        totalNumbers: v.totalNumbers,
+        priceCents: v.price,
+        minPerOrder: v.minPerOrder,
+        maxPerOrder: v.maxPerOrder,
+        endsAt: localInputToIso(v.endsAt),
+        drawDate: localInputToIso(v.drawDate),
+      }),
+    )
+export type RaffleFormValues = z.input<ReturnType<typeof raffleSchema>>
 
 // Prêmio: valor em reais é opcional.
 export const prizeSchema = z
@@ -63,19 +68,3 @@ export const prizeSchema = z
     return { title: v.title, description: v.description, kind: v.kind, valueCents }
   })
 export type PrizeFormValues = z.input<typeof prizeSchema>
-
-// Pacotes "+10", "+50": quantidades dentro do mínimo/máximo por pedido, sem repetir.
-export const packagesSchema = (min: number, max: number) =>
-  z
-    .object({
-      rows: z
-        .array(z.object({ quantity: zIntString(min, max, `De ${min} a ${max}`), highlighted: z.boolean() }))
-        .max(12, 'No máximo 12 pacotes'),
-    })
-    .superRefine((v, ctx) => {
-      const seen = new Set<number>()
-      v.rows.forEach((r, i) => {
-        if (seen.has(r.quantity)) ctx.addIssue({ code: 'custom', path: ['rows', i, 'quantity'], message: 'Quantidade repetida' })
-        seen.add(r.quantity)
-      })
-    })

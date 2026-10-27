@@ -18,9 +18,9 @@ export function nextStatus(current: RaffleStatus, action: RaffleAction): RaffleS
   return t.from.includes(current) ? t.to : null;
 }
 
-// Depois de publicada, o que define a venda não muda mais: quem já comprou
-// pagou por aquele preço, naquela quantidade de números.
-export const LOCKED_AFTER_PUBLISH = ['slug', 'totalNumbers', 'priceCents', 'saleMode', 'startsAt'] as const;
+// Depois de publicada, o que define a venda não muda mais. O preço pode mudar:
+// cada pedido guarda o próprio valor, então só os pedidos novos pagam o preço novo.
+export const LOCKED_AFTER_PUBLISH = ['slug', 'totalNumbers', 'saleMode', 'startsAt'] as const;
 
 export function lockedFieldsTouched(
   current: Record<string, unknown>,
@@ -32,6 +32,12 @@ export function lockedFieldsTouched(
     const b = patch[k] instanceof Date ? (patch[k] as Date).getTime() : patch[k];
     return a !== b;
   });
+}
+
+// Fim das vendas novo precisa estar no futuro. Repetir a data já gravada (mesmo vencida) não é erro.
+export function endsAtInPast(next: Date | null | undefined, saved: Date | null, now = new Date()): boolean {
+  if (!next || next.getTime() === saved?.getTime()) return false;
+  return next <= now;
 }
 
 export const isFinished = (s: RaffleStatus) => s === 'CLOSED' || s === 'DRAWN';

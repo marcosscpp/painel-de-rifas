@@ -3,7 +3,6 @@ import {
   ArrowSquareOutIcon,
   FileTextIcon,
   ImageIcon,
-  PackageIcon,
   SlidersHorizontalIcon,
   TrophyIcon,
 } from '@phosphor-icons/react'
@@ -11,7 +10,6 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { Alert, Card, FullPageSpinner, PageHeader, ProgressBar, RaffleStatusBadge } from '@/shared/components'
 import { formatInt } from '@/shared/utils/format'
 import { CoverSection } from '../components/CoverSection'
-import { PackagesEditor } from '../components/PackagesEditor'
 import { PrizesEditor } from '../components/PrizesEditor'
 import { RaffleActions } from '../components/RaffleActions'
 import { RaffleDetailsForm } from '../components/RaffleDetailsForm'
@@ -134,14 +132,6 @@ function EditRaffle({ id }: { id: string }) {
         icon={<TrophyIcon className="size-5" />}
       >
         <PrizesEditor raffle={raffle} />
-      </Section>
-
-      <Section
-        title="Pacotes promocionais"
-        description={`Atalhos de compra. Cada pacote precisa ficar entre ${raffle.minPerOrder} e ${raffle.maxPerOrder} números.`}
-        icon={<PackageIcon className="size-5" />}
-      >
-        <PackagesEditor raffle={raffle} />
       </Section>
     </div>
   )

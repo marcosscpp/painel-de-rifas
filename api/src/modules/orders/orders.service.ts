@@ -434,7 +434,8 @@ export class OrdersService {
         slug: o.raffle.slug,
         title: o.raffle.title,
         totalNumbers: o.raffle.totalNumbers,
-        priceCents: o.raffle.priceCents,
+        // Preço pago neste pedido: o da rifa pode ter mudado depois.
+        priceCents: Math.round(o.subtotalCents / o.quantity),
         drawDate: o.raffle.drawDate,
         cover: this.uploads.urls(o.raffle.coverKey),
       },

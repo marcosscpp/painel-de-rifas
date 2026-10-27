@@ -20,8 +20,6 @@ export const adminRafflesApi = {
   update: (id: string, input: Partial<RaffleInput>) =>
     http<AdminRaffle>(`/admin/raffles/${id}`, { method: 'PATCH', body: input }),
   remove: (id: string) => http<void>(`/admin/raffles/${id}`, { method: 'DELETE' }),
-  setPackages: (id: string, items: Array<{ quantity: number; highlighted: boolean }>) =>
-    http<AdminRaffle>(`/admin/raffles/${id}/packages`, { method: 'PUT', body: { items } }),
   setFeatured: (id: string, featured: boolean) =>
     http<AdminRaffle>(`/admin/raffles/${id}/featured`, { method: 'PUT', body: { featured } }),
   uploadCover: (id: string, file: File) => upload<AdminRaffle>(`/admin/raffles/${id}/cover`, file),

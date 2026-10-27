@@ -16,11 +16,13 @@ type Props = {
   disabled?: boolean
   defaultTime?: string
   presets?: DateTimePreset[]
+  // Menor data aceita no calendário ("AAAA-MM-DD")
+  min?: string
 }
 
 // Data e hora em campos separados: o datetime-local nativo muda muito de navegador para navegador
 // e é ruim de usar no celular. Mantém o mesmo formato de valor para não mudar quem usa.
-export function DateTimeField({ label, value, onChange, hint, error, disabled, defaultTime = '19:00', presets }: Props) {
+export function DateTimeField({ label, value, onChange, hint, error, disabled, defaultTime = '19:00', presets, min }: Props) {
   const id = useId()
   const [date, time] = value ? value.split('T') : ['', '']
 
@@ -39,6 +41,7 @@ export function DateTimeField({ label, value, onChange, hint, error, disabled, d
             id={id}
             type="date"
             value={date}
+            min={min}
             disabled={disabled}
             aria-invalid={!!error}
             onChange={(e) => setDate(e.target.value)}
