@@ -1,28 +1,67 @@
 import { LockKeyIcon, PauseIcon, PlayIcon, RocketLaunchIcon, StarIcon, TrashIcon } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router'
 import { Alert, Button } from '@/shared/components'
+import { useConfirm } from '@/shared/hooks/useDialog'
+import type { ConfirmOptions } from '@/shared/lib/dialog-context'
 import { formatInt } from '@/shared/utils/format'
 import { useDeleteRaffle, useRaffleMutation } from '../hooks/useAdminRaffles'
 import { adminRafflesApi } from '../services/admin-raffles.api'
 import type { AdminRaffle, RaffleAction } from '../types'
 
-const confirmText: Record<RaffleAction, (r: AdminRaffle) => string> = {
-  publish: (r) =>
-    `Publicar "${r.title}"?\n\nOs ${formatInt(r.totalNumbers)} números serão gerados e a rifa entra à venda. ` +
-    'Depois disso, preço, total de números e modo de venda não mudam mais.',
-  pause: () => 'Pausar as vendas? Ninguém consegue comprar até você retomar.',
-  resume: () => 'Retomar as vendas?',
-  close: () => 'Encerrar as vendas definitivamente? Não dá para reabrir.',
+const confirmText: Record<RaffleAction, (r: AdminRaffle) => ConfirmOptions> = {
+  publish: (r) => ({
+    title: 'Publicar rifa',
+    message:
+      `Publicar "${r.title}"?
+
+Os ${formatInt(r.totalNumbers)} números serão gerados e a rifa entra à venda. ` +
+      'Depois disso, preço, total de números e modo de venda não mudam mais.',
+    confirmLabel: 'Publicar',
+  }),
+  pause: () => ({
+    title: 'Pausar vendas',
+    message: 'Ninguém consegue comprar até você retomar.',
+    confirmLabel: 'Pausar',
+  }),
+  resume: () => ({ title: 'Retomar vendas', message: 'A rifa volta a aceitar compras.', confirmLabel: 'Retomar' }),
+  close: () => ({
+    title: 'Encerrar vendas',
+    message: 'As vendas são encerradas definitivamente. Não dá para reabrir.',
+    confirmLabel: 'Encerrar',
+    tone: 'danger',
+  }),
 }
 
 export function RaffleActions({ raffle }: { raffle: AdminRaffle }) {
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const act = useRaffleMutation((action: RaffleAction) => adminRafflesApi.transition(raffle.id, action))
   const del = useDeleteRaffle()
   const feature = useRaffleMutation((featured: boolean) => adminRafflesApi.setFeatured(raffle.id, featured))
 
-  const run = (action: RaffleAction) => {
-    if (confirm(confirmText[action](raffle))) act.mutate(action)
+  const run = async (action: RaffleAction) => {
+    if (await confirm(confirmText[action](raffle))) act.mutate(action)
+  }
+
+  const toggleFeatured = async () => {
+    if (raffle.featured) return feature.mutate(false)
+    const ok = await confirm({
+      title: 'Destacar na home',
+      message:
+        'Esta rifa aparece primeiro na home, com a capa grande. Se outra rifa estiver em destaque, ela deixa de estar.',
+      confirmLabel: 'Destacar',
+    })
+    if (ok) feature.mutate(true)
+  }
+
+  const removeDraft = async () => {
+    const ok = await confirm({
+      title: 'Excluir rascunho',
+      message: 'Este rascunho será excluído. Não dá para desfazer.',
+      confirmLabel: 'Excluir',
+      tone: 'danger',
+    })
+    if (ok) del.mutate(raffle.id, { onSuccess: () => navigate('/admin/rifas', { replace: true }) })
   }
 
   const s = raffle.status
@@ -57,14 +96,7 @@ export function RaffleActions({ raffle }: { raffle: AdminRaffle }) {
           <Button
             variant="secondary"
             loading={feature.isPending}
-            onClick={() =>
-              raffle.featured
-                ? feature.mutate(false)
-                : confirm(
-                    'Colocar esta rifa em destaque? Ela aparece primeiro na home, com a capa grande. ' +
-                      'Se outra rifa estiver em destaque, ela deixa de estar.',
-                  ) && feature.mutate(true)
-            }
+            onClick={toggleFeatured}
           >
             <StarIcon weight={raffle.featured ? 'fill' : 'bold'} className="size-4 text-anzac-500" />
             {raffle.featured ? 'Tirar destaque' : 'Destacar na home'}
@@ -75,10 +107,7 @@ export function RaffleActions({ raffle }: { raffle: AdminRaffle }) {
             variant="ghost"
             className="text-alert hover:bg-alert-soft"
             loading={del.isPending}
-            onClick={() =>
-              confirm('Excluir este rascunho? Não dá para desfazer.') &&
-              del.mutate(raffle.id, { onSuccess: () => navigate('/admin/rifas', { replace: true }) })
-            }
+            onClick={removeDraft}
           >
             <TrashIcon className="size-4" />
             Excluir rascunho

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FloppyDiskIcon, TrashIcon, TrophyIcon, XIcon } from '@phosphor-icons/react'
 import { Alert, Button, FilePickerButton, Input, Select, Textarea } from '@/shared/components'
+import { useConfirm } from '@/shared/hooks/useDialog'
 import { useZodForm } from '@/shared/hooks/useZodForm'
 import { centsToInput } from '@/shared/utils/format'
 import { prizeKinds } from '../constants'
@@ -12,6 +13,7 @@ import type { AdminPrize, AdminRaffle, PrizeInput } from '../types'
 export function PrizeCard({ raffle, prize }: { raffle: AdminRaffle; prize: AdminPrize }) {
   const isDraft = raffle.status === 'DRAFT'
   const finished = raffle.status === 'CLOSED' || raffle.status === 'DRAWN'
+  const confirm = useConfirm()
 
   const {
     register,
@@ -50,7 +52,15 @@ export function PrizeCard({ raffle, prize }: { raffle: AdminRaffle; prize: Admin
             variant="ghost"
             className="text-alert hover:bg-alert-soft"
             loading={remove.isPending}
-            onClick={() => confirm('Remover este prêmio e as fotos?') && remove.mutate(undefined)}
+            onClick={async () => {
+              const ok = await confirm({
+                title: 'Remover prêmio',
+                message: 'O prêmio e as fotos dele serão removidos.',
+                confirmLabel: 'Remover',
+                tone: 'danger',
+              })
+              if (ok) remove.mutate(undefined)
+            }}
           >
             <TrashIcon className="size-4" />
             Remover
