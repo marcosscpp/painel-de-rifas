@@ -1,5 +1,8 @@
 export type DrawInput = { contest: string; prizes: string[] }
 
+// Resultado buscado na Caixa: date em "AAAA-MM-DD".
+export type FederalResult = { contest: string; date: string; prizes: string[] }
+
 export type DrawStep = {
   prize: number // posição do prêmio (1 a 5)
   candidate: number

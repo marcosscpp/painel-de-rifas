@@ -1,10 +1,18 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { maskPhone } from '../../common/utils/br.js';
 import { PiiCipher } from '../../infra/crypto/pii-cipher.js';
 import { PrismaService } from '../../infra/prisma/prisma.service.js';
 import { candidates, type DrawOutcome, explain, resolveWinner } from './draw.rules.js';
 import type { DrawDto } from './dto/draw.dto.js';
+import { CAIXA_FEDERAL_URL, parseFederal } from './federal-result.js';
 
 type Db = PrismaService | Prisma.TransactionClient;
 
@@ -20,10 +28,45 @@ const publicWinnerLabel = (w: { name: string; city: string | null; state: string
 
 @Injectable()
 export class DrawsService {
+  private readonly logger = new Logger(DrawsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly cipher: PiiCipher,
   ) {}
+
+  // Busca os 5 prêmios de um concurso na Caixa. O admin ainda confere na prévia antes de publicar.
+  async federalResult(contest: string) {
+    let res: Response;
+    let body: string;
+    try {
+      res = await fetch(`${CAIXA_FEDERAL_URL}/${Number(contest)}`, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(8_000),
+      });
+      body = await res.text();
+    } catch (e) {
+      this.logger.warn(`Caixa indisponível: ${String(e)}`);
+      throw new ServiceUnavailableException('Não foi possível falar com a Caixa agora. Digite os prêmios à mão.');
+    }
+    // Concurso que não existe (ou ainda não foi sorteado) volta como 500 com "StatusCode":404 no corpo.
+    if (!res.ok) {
+      if (res.status === 404 || /StatusCode\\?":404/.test(body)) {
+        throw new NotFoundException(`Concurso ${contest} não encontrado na Caixa (ainda não foi sorteado?)`);
+      }
+      this.logger.warn(`Caixa respondeu ${res.status} para o concurso ${contest}`);
+      throw new ServiceUnavailableException('A Caixa não respondeu direito agora. Digite os prêmios à mão.');
+    }
+    let json: unknown;
+    try {
+      json = JSON.parse(body);
+    } catch {
+      throw new BadGatewayException('Resposta da Caixa em formato inesperado. Digite os prêmios à mão.');
+    }
+    const out = parseFederal(json, contest);
+    if ('error' in out) throw new BadGatewayException(`${out.error}. Digite os prêmios à mão.`);
+    return out;
+  }
 
   // Prévia: calcula o ganhador sem gravar nada (o admin confere antes de publicar).
   async preview(raffleId: string, dto: DrawDto) {

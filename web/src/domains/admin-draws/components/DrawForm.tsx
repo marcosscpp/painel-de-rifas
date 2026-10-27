@@ -1,10 +1,10 @@
-import { ArrowSquareOutIcon, MagnifyingGlassIcon, MegaphoneIcon } from '@phosphor-icons/react'
+import { ArrowSquareOutIcon, CloudArrowDownIcon, MagnifyingGlassIcon, MegaphoneIcon } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { Alert, Button, ConfirmDialog, MaskedInput } from '@/shared/components'
 import { useZodForm } from '@/shared/hooks/useZodForm'
-import { formatInt, maskDigits } from '@/shared/utils/format'
-import { useDrawConfirm, useDrawPreview } from '../hooks/useDraws'
+import { formatDate, formatInt, maskDigits } from '@/shared/utils/format'
+import { useDrawConfirm, useDrawPreview, useFederalResult } from '../hooks/useDraws'
 import type { DrawInput, DrawRaffle } from '../types'
 import { DrawPreview } from './DrawPreview'
 
@@ -13,25 +13,38 @@ const schema = z.object({
   prizes: z.array(z.string().regex(/^\d{5}$/, '5 dígitos')).length(5),
 })
 
-// Apuração: o admin digita o concurso e os 5 prêmios da Federal, confere a prévia e publica.
+// Apuração: o admin informa o concurso, busca os 5 prêmios na Caixa (ou digita), confere a prévia e publica.
 // A publicação é única: depois disso o resultado aparece na página da rifa.
 export function DrawForm({ raffle, onDone }: { raffle: DrawRaffle; onDone: () => void }) {
   const [confirming, setConfirming] = useState(false)
   const [checked, setChecked] = useState<DrawInput | null>(null)
   const preview = useDrawPreview(raffle.id)
   const confirm = useDrawConfirm(raffle.id)
-  const { control, watch, handleSubmit } = useZodForm(schema, {
+  const federal = useFederalResult()
+  const { control, watch, handleSubmit, getValues, setValue, setError } = useZodForm(schema, {
     defaultValues: { contest: '', prizes: ['', '', '', '', ''] },
   })
 
-  // Mudou algum número: a prévia antiga não vale mais.
+  // Mudou algum número: a prévia antiga não vale mais. Outro concurso: a busca na Caixa também não.
   useEffect(() => {
-    const sub = watch(() => {
+    const sub = watch((_, { name }) => {
       preview.reset()
       setChecked(null)
+      if (name === 'contest') federal.reset()
     })
     return () => sub.unsubscribe()
-  }, [watch, preview.reset])
+  }, [watch, preview.reset, federal.reset])
+
+  const fetchFromCaixa = () => {
+    const contest = getValues('contest')
+    if (!/^\d{1,6}$/.test(contest)) return setError('contest', { message: 'Informe o número do concurso' })
+    federal.mutate(contest, {
+      onSuccess: (r) => r.prizes.forEach((p, i) => setValue(`prizes.${i}`, p, { shouldValidate: true })),
+    })
+  }
+  // Concurso de outro dia que não o da data do sorteio da rifa: só avisa, o admin decide.
+  const drawDay = raffle.drawDate ? new Date(raffle.drawDate).toLocaleDateString('sv-SE') : null
+  const otherDay = federal.data && drawDay && federal.data.date !== drawDay
 
   const check = handleSubmit((input) => {
     setChecked(input)
@@ -51,6 +64,16 @@ export function DrawForm({ raffle, onDone }: { raffle: DrawRaffle; onDone: () =>
             placeholder="5912"
             wrapperClassName="w-32"
           />
+          <Button
+            type="button"
+            variant="secondary"
+            loading={federal.isPending}
+            onClick={fetchFromCaixa}
+            className="mb-0.5"
+          >
+            <CloudArrowDownIcon weight="bold" className="size-4" />
+            Buscar na Caixa
+          </Button>
           <a
             href="https://loterias.caixa.gov.br/Paginas/Federal.aspx"
             target="_blank"
@@ -61,6 +84,13 @@ export function DrawForm({ raffle, onDone }: { raffle: DrawRaffle; onDone: () =>
             <ArrowSquareOutIcon className="size-3.5" />
           </a>
         </div>
+        {federal.error && <Alert tone="error">{federal.error.message}</Alert>}
+        {federal.data && (
+          <Alert tone={otherDay ? 'warning' : 'info'}>
+            Prêmios do concurso {federal.data.contest}, sorteado em {formatDate(federal.data.date)}.
+            {otherDay && ` A data do sorteio desta rifa é ${formatDate(drawDay)}: confira se é o concurso certo.`}
+          </Alert>
+        )}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           {[0, 1, 2, 3, 4].map((i) => (
             <MaskedInput
@@ -76,8 +106,8 @@ export function DrawForm({ raffle, onDone }: { raffle: DrawRaffle; onDone: () =>
           ))}
         </div>
         <p className="text-xs text-slate-grey-600">
-          {formatInt(raffle.totalNumbers)} números · {formatInt(raffle.progress.paid)} vendidos. Digite os 5 bilhetes
-          exatamente como a Caixa divulgou.
+          {formatInt(raffle.totalNumbers)} números · {formatInt(raffle.progress.paid)} vendidos. Busque na Caixa ou
+          digite os 5 bilhetes exatamente como a Caixa divulgou.
         </p>
         <Button type="submit" variant="secondary" loading={preview.isPending} className="self-start">
           <MagnifyingGlassIcon weight="bold" className="size-4" />

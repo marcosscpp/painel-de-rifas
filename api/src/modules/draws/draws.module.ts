@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { DrawsAdminController } from './draws.admin.controller.js';
+import { DrawsAdminController, LotteryAdminController } from './draws.admin.controller.js';
 import { DrawsService } from './draws.service.js';
 
 // Sorteio: resultado da Loteria Federal, regra de apuração e ganhador.
 @Module({
-  controllers: [DrawsAdminController],
+  controllers: [DrawsAdminController, LotteryAdminController],
   providers: [DrawsService],
   exports: [DrawsService],
 })

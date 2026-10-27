@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { RaffleResult } from '@/domains/raffles'
 import { http } from '@/shared/lib/http'
 import type { Paginated } from '@/shared/types'
-import type { DrawInput, DrawOutcome, DrawRaffle } from '../types'
+import type { DrawInput, DrawOutcome, DrawRaffle, FederalResult } from '../types'
 
 export function useDrawRaffles(status: DrawRaffle['status']) {
   return useQuery({
@@ -16,6 +16,13 @@ export function usePublishedResult(slug: string) {
   return useQuery({
     queryKey: ['raffle-result', slug],
     queryFn: async () => (await http<{ result: RaffleResult | null }>(`/raffles/${slug}`)).result,
+  })
+}
+
+// Busca os 5 prêmios de um concurso na Caixa (pela nossa API).
+export function useFederalResult() {
+  return useMutation({
+    mutationFn: (contest: string) => http<FederalResult>(`/admin/lottery/federal/${contest}`),
   })
 }
 

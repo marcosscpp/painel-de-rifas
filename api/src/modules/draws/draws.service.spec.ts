@@ -74,4 +74,33 @@ describe('DrawsService', () => {
       data: expect.objectContaining({ status: 'DRAWN', winningNumber: null, winnerOrderId: null, winnerPublicName: null }),
     });
   });
+
+  describe('resultado na Caixa', () => {
+    const stub = (status: number, body: unknown) =>
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(typeof body === 'string' ? body : JSON.stringify(body), { status })));
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('devolve os 5 prêmios do concurso', async () => {
+      stub(200, { numero: 6112, dataApuracao: '24/10/2026', listaDezenas: ['064383', '047006', '015140', '034147', '009305'] });
+      await expect(service.federalResult('6112')).resolves.toEqual({
+        contest: '6112',
+        date: '2026-10-24',
+        prizes: ['64383', '47006', '15140', '34147', '09305'],
+      });
+    });
+
+    it('concurso ainda não sorteado: 404', async () => {
+      stub(500, { exceptionMessage: '{"Content":{},"StatusCode":404,"ReasonPhrase":""}' });
+      await expect(service.federalResult('6200')).rejects.toThrow('não encontrado');
+    });
+
+    it('Caixa fora do ar ou resposta estranha: pede para digitar à mão', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('timeout')));
+      await expect(service.federalResult('6112')).rejects.toThrow('à mão');
+      stub(503, 'erro');
+      await expect(service.federalResult('6112')).rejects.toThrow('à mão');
+      stub(200, '<html>');
+      await expect(service.federalResult('6112')).rejects.toThrow('à mão');
+    });
+  });
 });
