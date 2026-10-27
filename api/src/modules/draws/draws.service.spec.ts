@@ -78,6 +78,9 @@ describe('DrawsService', () => {
   describe('resultado na Caixa', () => {
     const stub = (status: number, body: unknown) =>
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(typeof body === 'string' ? body : JSON.stringify(body), { status })));
+    beforeEach(() => {
+      service.retryDelaysMs = [0, 0];
+    });
     afterEach(() => vi.unstubAllGlobals());
 
     it('devolve os 5 prêmios do concurso', async () => {
@@ -89,14 +92,28 @@ describe('DrawsService', () => {
       });
     });
 
-    it('concurso ainda não sorteado: 404', async () => {
+    it('concurso ainda não sorteado: 404, sem tentar de novo', async () => {
       stub(500, { exceptionMessage: '{"Content":{},"StatusCode":404,"ReasonPhrase":""}' });
       await expect(service.federalResult('6200')).rejects.toThrow('não encontrado');
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('falha de rede e 5xx: tenta de novo, até 3 vezes', async () => {
+      const ok = { numero: 6112, dataApuracao: '24/10/2026', listaDezenas: ['064383', '047006', '015140', '034147', '009305'] };
+      const f = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('timeout'))
+        .mockResolvedValueOnce(new Response('erro', { status: 502 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(ok), { status: 200 }));
+      vi.stubGlobal('fetch', f);
+      await expect(service.federalResult('6112')).resolves.toMatchObject({ contest: '6112' });
+      expect(f).toHaveBeenCalledTimes(3);
     });
 
     it('Caixa fora do ar ou resposta estranha: pede para digitar à mão', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('timeout')));
       await expect(service.federalResult('6112')).rejects.toThrow('à mão');
+      expect(fetch).toHaveBeenCalledTimes(3);
       stub(503, 'erro');
       await expect(service.federalResult('6112')).rejects.toThrow('à mão');
       stub(200, '<html>');

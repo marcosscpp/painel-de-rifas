@@ -26,6 +26,9 @@ export const publicWinnerName = (name: string) => {
 const publicWinnerLabel = (w: { name: string; city: string | null; state: string | null }) =>
   [publicWinnerName(w.name), w.city && w.state ? `${w.city}/${w.state}` : null].filter(Boolean).join(' · ');
 
+// Concurso que não existe (ou ainda não foi sorteado) volta como 500 com "StatusCode":404 no corpo.
+const caixaNotFound = (res: Response, body: string) => res.status === 404 || /StatusCode\\?":404/.test(body);
+
 @Injectable()
 export class DrawsService {
   private readonly logger = new Logger(DrawsService.name);
@@ -35,23 +38,34 @@ export class DrawsService {
     private readonly cipher: PiiCipher,
   ) {}
 
+  // Espera antes de cada nova tentativa na Caixa (3 tentativas no total). Os testes zeram.
+  retryDelaysMs = [500, 1_500];
+
   // Busca os 5 prêmios de um concurso na Caixa. O admin ainda confere na prévia antes de publicar.
+  // Falha de rede, tempo esgotado e erro 5xx/429 tentam de novo; concurso não encontrado e
+  // resposta fora do formato não (repetir não muda nada).
   async federalResult(contest: string) {
-    let res: Response;
-    let body: string;
-    try {
-      res = await fetch(`${CAIXA_FEDERAL_URL}/${Number(contest)}`, {
-        headers: { Accept: 'application/json' },
-        signal: AbortSignal.timeout(8_000),
-      });
-      body = await res.text();
-    } catch (e) {
-      this.logger.warn(`Caixa indisponível: ${String(e)}`);
-      throw new ServiceUnavailableException('Não foi possível falar com a Caixa agora. Digite os prêmios à mão.');
+    let res: Response | null = null;
+    let body = '';
+    for (let attempt = 0; ; attempt++) {
+      try {
+        res = await fetch(`${CAIXA_FEDERAL_URL}/${Number(contest)}`, {
+          headers: { Accept: 'application/json' },
+          signal: AbortSignal.timeout(4_000),
+        });
+        body = await res.text();
+      } catch (e) {
+        res = null;
+        this.logger.warn(`Caixa indisponível (tentativa ${attempt + 1}): ${String(e)}`);
+      }
+      const transient = !res || (!res.ok && !caixaNotFound(res, body) && (res.status >= 500 || res.status === 429));
+      if (!transient || attempt >= this.retryDelaysMs.length) break;
+      await new Promise((r) => setTimeout(r, this.retryDelaysMs[attempt]));
     }
-    // Concurso que não existe (ou ainda não foi sorteado) volta como 500 com "StatusCode":404 no corpo.
+
+    if (!res) throw new ServiceUnavailableException('Não foi possível falar com a Caixa agora. Digite os prêmios à mão.');
     if (!res.ok) {
-      if (res.status === 404 || /StatusCode\\?":404/.test(body)) {
+      if (caixaNotFound(res, body)) {
         throw new NotFoundException(`Concurso ${contest} não encontrado na Caixa (ainda não foi sorteado?)`);
       }
       this.logger.warn(`Caixa respondeu ${res.status} para o concurso ${contest}`);
