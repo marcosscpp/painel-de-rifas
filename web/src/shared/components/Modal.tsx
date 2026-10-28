@@ -19,6 +19,10 @@ type Props = {
 export function Modal({ open, onClose, title, children, footer, className, busy }: Props) {
   const titleId = useId()
   const panel = useRef<HTMLDivElement>(null)
+  // onClose costuma chegar como função nova a cada render; guardado em ref para o efeito
+  // abaixo rodar só ao abrir/fechar. Senão o foco volta para o primeiro campo a cada tecla.
+  const latest = useRef({ onClose, busy })
+  latest.current = { onClose, busy }
 
   useEffect(() => {
     if (!open) return
@@ -28,7 +32,7 @@ export function Modal({ open, onClose, title, children, footer, className, busy 
     panel.current?.querySelector<HTMLElement>('input, select, textarea, button:not([data-close])')?.focus()
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !busy) onClose()
+      if (e.key === 'Escape' && !latest.current.busy) latest.current.onClose()
       if (e.key !== 'Tab' || !panel.current) return
       // Mantém o Tab dentro do diálogo.
       const items = panel.current.querySelectorAll<HTMLElement>(
@@ -50,7 +54,7 @@ export function Modal({ open, onClose, title, children, footer, className, busy 
       document.body.style.overflow = overflow
       previous?.focus()
     }
-  }, [open, onClose, busy])
+  }, [open])
 
   if (!open) return null
 
