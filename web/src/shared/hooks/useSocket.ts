@@ -1,37 +1,39 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
-import { getSocket } from '@/shared/lib/socket'
+import { env } from '@/shared/config/env'
+import { logApiStream } from '@/shared/lib/api-logger'
 
-// Entra numa sala enquanto o componente estiver na tela. Entra de novo se a conexão cair e voltar.
-export function useSocketRoom(joinEvent: string, payload: Record<string, string> | null, leaveEvent?: string) {
+// EventSource reconnects automatically and sends session cookies.
+const events = new EventTarget()
+
+export function useSocketRoom(_joinEvent: string, payload: Record<string, string> | null, _leaveEvent?: string) {
   const key = payload ? JSON.stringify(payload) : null
-
   useEffect(() => {
     if (!key) return
-    const socket = getSocket()
-    const data = JSON.parse(key) as Record<string, string>
-    const join = () => socket.emit(joinEvent, data)
-    join()
-    socket.on('connect', join)
-    return () => {
-      socket.off('connect', join)
-      if (leaveEvent) socket.emit(leaveEvent, data)
+    const source = new EventSource(`${env.apiBase}/events?${new URLSearchParams(JSON.parse(key) as Record<string, string>)}`, { withCredentials: true })
+    source.addEventListener('open', () => {
+      logApiStream('connected')
+      events.dispatchEvent(new CustomEvent('raffle:refresh', { detail: JSON.parse(key) as Record<string, string> }))
+    })
+    source.addEventListener('error', () => logApiStream('reconnecting'))
+    for (const name of ['raffle:progress', 'raffle:numbers', 'order:status']) {
+      source.addEventListener(name, (event) => {
+        const data: unknown = JSON.parse((event as MessageEvent<string>).data)
+        events.dispatchEvent(new CustomEvent(name, { detail: data }))
+      })
     }
-  }, [joinEvent, leaveEvent, key])
+    return () => {
+      source.close()
+      logApiStream('closed')
+    }
+  }, [key])
 }
 
-// Escuta um evento; o handler mais recente é sempre o usado (sem reinscrever a cada render).
 export function useSocketEvent<T>(event: string, handler: (payload: T) => void) {
   const ref = useRef(handler)
-  useLayoutEffect(() => {
-    ref.current = handler
-  })
-
+  useLayoutEffect(() => { ref.current = handler })
   useEffect(() => {
-    const socket = getSocket()
-    const fn = (p: T) => ref.current(p)
-    socket.on(event, fn)
-    return () => {
-      socket.off(event, fn)
-    }
+    const listener = (e: Event) => ref.current((e as CustomEvent<T>).detail)
+    events.addEventListener(event, listener)
+    return () => events.removeEventListener(event, listener)
   }, [event])
 }

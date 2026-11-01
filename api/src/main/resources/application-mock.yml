@@ -1,0 +1,8 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration
+app:
+  admin-email: ${ADMIN_EMAIL:admin@rifas.local}
+  admin-password: ${ADMIN_PASSWORD:admin-dev-123456}

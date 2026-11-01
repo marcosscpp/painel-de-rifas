@@ -1,36 +1,23 @@
 # syntax=docker/dockerfile:1
-
-FROM node:24-alpine AS base
+FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /app
-RUN apk add --no-cache openssl
+COPY pom.xml ./
+RUN mvn -B -ntp dependency:go-offline
+COPY src/main ./src/main
+COPY src/test ./src/test
+RUN mvn -B -ntp verify
 
-# ── deps: todas as dependências (dev incluso) ──
-FROM base AS deps
-COPY package.json package-lock.json ./
-COPY prisma ./prisma
-COPY prisma.config.ts ./
-RUN npm ci
-
-# ── dev: hot reload, código montado por volume ──
-FROM deps AS dev
-ENV NODE_ENV=development
+FROM maven:3.9-eclipse-temurin-25 AS dev
+WORKDIR /app
+COPY pom.xml ./
+RUN mvn -B -ntp dependency:go-offline
+COPY src/main ./src/main
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && npm run start:dev"]
+CMD ["mvn", "-B", "-ntp", "spring-boot:run"]
 
-# ── build ──
-FROM deps AS build
-COPY . .
-RUN npx prisma generate && npm run build && npm prune --omit=dev
-
-# ── prod: imagem enxuta, usuário sem root ──
-FROM base AS prod
-ENV NODE_ENV=production
-COPY --from=build --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/dist ./dist
-COPY --from=build --chown=node:node /app/prisma ./prisma
-COPY --from=build --chown=node:node /app/prisma.config.ts /app/package.json ./
-USER node
+FROM eclipse-temurin:25-jre AS prod
+WORKDIR /app
+COPY --from=build --chown=10001:10001 /app/target/rifas-api-1.0.0.jar /app/app.jar
+USER 10001:10001
 EXPOSE 3000
-HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
-CMD ["node", "dist/main.js"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

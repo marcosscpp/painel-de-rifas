@@ -7,8 +7,7 @@ import type { RaffleOption, ReportFilters, ReportInfo, ReportPreview, ReportType
 export const adminReportsApi = {
   catalog: () => http<ReportInfo[]>('/admin/reports'),
   preview: (type: ReportType, f: ReportFilters) => http<ReportPreview>(`/admin/reports/${type}${toQuery(f)}`),
-  // Download direto pelo navegador (o cookie da sessão vai junto): o arquivo chega em streaming,
-  // sem passar pela memória da página, então aguenta relatórios com milhões de linhas.
+  // Download direto da API Spring Boot; o cookie de sessão acompanha a requisição.
   exportUrl: (type: ReportType, format: 'csv' | 'xlsx', f: ReportFilters) =>
     `${env.apiBase}/admin/reports/${type}/export${toQuery({ ...f, format })}`,
   raffles: async (): Promise<RaffleOption[]> =>

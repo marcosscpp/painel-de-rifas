@@ -42,6 +42,10 @@ export function useRaffleLive(slug: string | undefined) {
   const qc = useQueryClient()
   useSocketRoom('raffle:join', slug ? { slug } : null, 'raffle:leave')
 
+  useSocketEvent<{ slug?: string }>('raffle:refresh', (e) => {
+    if (e.slug === slug && slug) void qc.invalidateQueries({ queryKey: keys.detail(slug) })
+  })
+
   useSocketEvent<{ slug: string; progress: RaffleProgress }>('raffle:progress', (e) => {
     if (e.slug !== slug) return
     qc.setQueryData<RaffleDetail>(keys.detail(slug), (r) => (r ? { ...r, progress: e.progress } : r))

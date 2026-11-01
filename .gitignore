@@ -8,3 +8,5 @@ coverage/
 api/src/generated/
 .DS_Store
 *.tsbuildinfo
+api/target/
+api/.mvn/wrapper/maven-wrapper.jar

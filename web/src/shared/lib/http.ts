@@ -1,5 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig, type Method } from 'axios'
 import { env } from '@/shared/config/env'
+import { beginApiCall, finishApiCall, type ApiCall } from './api-logger'
 
 export class ApiError extends Error {
   readonly status: number
@@ -21,11 +22,32 @@ export const api = axios.create({
   timeout: 30_000,
 })
 
-// Todo erro vira ApiError com a mensagem da API (NestJS manda string ou lista de strings).
+const calls = new WeakMap<object, ApiCall>()
+
+api.interceptors.request.use((config) => {
+  const call = beginApiCall(config.method ?? 'GET', `${config.baseURL ?? ''}/${(config.url ?? '').replace(/^\//, '')}`)
+  calls.set(config, call)
+  config.headers.set('X-Request-ID', call.requestId)
+  return config
+})
+
+// Todo erro vira ApiError com a mensagem retornada pela API Spring Boot.
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    const call = calls.get(res.config)
+    if (call) {
+      finishApiCall(call, res.status, res.headers['x-request-id'] as string | undefined)
+      calls.delete(res.config)
+    }
+    return res
+  },
   (error: unknown) => {
     if (error instanceof AxiosError) {
+      const call = error.config && calls.get(error.config)
+      if (call) {
+        finishApiCall(call, error.response?.status ?? 0, error.response?.headers['x-request-id'] as string | undefined, error.code)
+        calls.delete(error.config!)
+      }
       const status = error.response?.status ?? 0
       const data = error.response?.data as { message?: string | string[] } | undefined
       const msg = data?.message

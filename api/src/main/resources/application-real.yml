@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:5433/rifas}
+    username: ${POSTGRES_USER:rifas}
+    password: ${POSTGRES_PASSWORD}
+  flyway:
+    default-schema: winclub
+    schemas: winclub
+server:
+  # Production reaches the API through the trusted Caddy reverse proxy.
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        secure: ${COOKIE_SECURE:true}

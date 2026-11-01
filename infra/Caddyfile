@@ -25,15 +25,12 @@
 		max_size 10MB
 	}
 
-	# API e WebSocket vão para o Nest; o resto é o front estático.
+	# API e eventos SSE vão para o Spring Boot; o restante é o frontend.
 	handle /api/* {
 		reverse_proxy api:3000 {
 			health_uri /api/health
 			lb_try_duration 10s
 		}
-	}
-	handle /socket.io/* {
-		reverse_proxy api:3000
 	}
 	handle {
 		# CSP do site: scripts só do próprio domínio, imagens do domínio e do img.
